@@ -1,3 +1,6 @@
+### IntelliJ ###
+.idea/
+
 ### Maven ###
 target/
 !**/src/main/**/target/
