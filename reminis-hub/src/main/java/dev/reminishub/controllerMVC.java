@@ -1,4 +1,4 @@
-package dev.reminishub.controller.web;
+package dev.reminishub;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
