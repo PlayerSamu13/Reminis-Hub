@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(${proyecto.ficha.nombre})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container detail-page">
+    <a class="back-link" th:href="@{/proyectos}"><span aria-hidden="true">← </span><span th:text="#{detail.back}">Volver al catálogo</span></a>
+    <div class="detail-heading"><span class="category-tag" th:text="${#messages.msgOrNull('categoria.' + proyecto.ficha.categoria) ?: proyecto.ficha.categoria}"></span><span class="published"><span aria-hidden="true">✓ </span><span th:text="#{project.published}"></span></span></div>
+    <h1 th:text="${proyecto.ficha.nombre}"></h1>
+    <p class="detail-summary" th:text="${proyecto.ficha.resumen}"></p>
+    <div class="fiction-notice" th:if="${proyecto.ficha.ficticio}"><strong th:text="#{project.fictitious}"></strong><span th:text="#{detail.fictitious}">Este proyecto y sus autores son ejemplos de demostración.</span></div>
+    <div class="detail-layout">
+        <article class="detail-body">
+            <h2 th:text="#{detail.about}">Sobre el proyecto</h2><p class="description-text" th:text="${proyecto.descripcion}"></p>
+            <h2 th:text="#{detail.authors}">Autores</h2>
+            <ul class="author-list" th:unless="${proyecto.autores.isEmpty()}"><li th:each="autor : ${proyecto.autores}"><span class="author-mark" aria-hidden="true">↗</span><span th:text="${autor}"></span></li></ul>
+            <p th:if="${proyecto.autores.isEmpty()}" th:text="#{detail.noAuthors}">No hay nombres públicos disponibles.</p>
+        </article>
+        <aside class="detail-aside" aria-labelledby="ficha-titulo">
+            <h2 id="ficha-titulo" th:text="#{detail.sheet}">Ficha del proyecto</h2>
+            <dl><dt th:text="#{detail.period}">Periodo académico</dt><dd th:text="${proyecto.ficha.periodo()}"></dd><dt th:if="${proyecto.asignatura != null}" th:text="#{detail.course}">Asignatura</dt><dd th:if="${proyecto.asignatura != null}" th:text="${proyecto.asignatura}"></dd></dl>
+            <h3 th:text="#{project.technologies}">Tecnologías</h3><ul class="tech-list"><li th:each="t : ${proyecto.ficha.tecnologias}" th:text="${t}"></li></ul>
+            <a class="btn btn-primary w-100 repository-link" th:href="${proyecto.repositorio}" target="_blank" rel="noopener noreferrer"><span th:text="#{detail.code}">Explorar el código</span><span aria-hidden="true"> ↗</span><span class="visually-hidden" th:text="#{detail.newTab}"></span></a>
+            <p class="external-note" th:text="#{detail.external}">Repositorio en GitHub · Se abre en otra pestaña</p>
+        </aside>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body></html>

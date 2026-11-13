@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:fragment="head(titulo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titulo} + ' · ReminisHub'">ReminisHub</title>
+    <link rel="stylesheet" th:href="@{/vendor/bootstrap-5.3.8.min.css}">
+    <link rel="stylesheet" th:href="@{/css/reminishub.css}">
+</head>
+<body>
+<header th:fragment="header" class="site-header">
+    <a class="skip-link" href="#contenido" th:text="#{nav.skip}">Saltar al contenido</a>
+    <div class="container site-nav">
+        <a class="brand" th:href="@{/}" aria-label="ReminisHub">
+            <span class="brand-mark" aria-hidden="true">r<span>.</span></span>
+            <span>Reminis<span class="brand-accent">Hub</span><small th:text="#{brand.subtitle}">Ideas que continúan</small></span>
+        </a>
+        <nav class="nav-links" th:attr="aria-label=#{nav.main}">
+            <a class="nav-catalog" th:href="@{/proyectos}" th:text="#{nav.catalog}">Explorar proyectos</a>
+            <div class="language-switch" th:attr="aria-label=#{nav.language}">
+                <a th:href="${idiomaEs}" lang="es" hreflang="es" aria-label="Español" th:attr="aria-current=${#locale.language == 'es' ? 'true' : null}">ES</a>
+                <a th:href="${idiomaEn}" lang="en" hreflang="en" aria-label="English" th:attr="aria-current=${#locale.language == 'en' ? 'true' : null}">EN</a>
+            </div>
+        </nav>
+    </div>
+</header>
+<footer th:fragment="footer" class="site-footer">
+    <div class="container footer-inner">
+        <div><strong>ReminisHub<span class="text-accent">.</span></strong><p th:text="#{footer.description}">Conocimiento que inspira nuevos proyectos.</p></div>
+        <p class="footer-academic" th:text="#{footer.academic}">Proyecto académico · Universidad Surcolombiana</p>
+    </div>
+</footer>
+</body>
+</html>

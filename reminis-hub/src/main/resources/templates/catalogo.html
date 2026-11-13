@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{catalog.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido">
+    <section class="hero">
+        <div class="container hero-inner">
+            <div class="hero-copy">
+                <p class="eyebrow"><span aria-hidden="true"></span><span th:text="#{hero.eyebrow}">REPOSITORIO ACADÉMICO</span></p>
+                <h1><span th:text="#{hero.title}">Lo que otros crearon.</span><br><span class="text-accent" th:text="#{hero.accent}">Tu próxima gran idea.</span></h1>
+                <p class="hero-description" th:text="#{hero.description}">Explora proyectos, descubre tecnologías y encuentra un punto de partida para construir algo propio.</p>
+            </div>
+            <div class="hero-note">
+                <span class="note-index" aria-hidden="true">[ rh / ideas ]</span>
+                <p th:text="#{hero.note}">El conocimiento crece cuando se comparte.</p>
+                <div class="note-rule"></div>
+                <span class="note-bottom" th:text="#{hero.community}">De la comunidad, para la comunidad.</span>
+            </div>
+        </div>
+    </section>
+    <div class="container catalog-layout">
+        <aside class="filter-panel" aria-labelledby="filtros-titulo">
+            <div class="filter-heading"><h2 id="filtros-titulo" th:text="#{filter.title}">Afinar búsqueda</h2><span aria-hidden="true">≡</span></div>
+            <form id="filtros" th:action="@{/proyectos}" method="get">
+                <label class="form-label" for="categoria" th:text="#{filter.category}">Categoría</label>
+                <select class="form-select" name="categoria" id="categoria">
+                    <option value="" th:text="#{filter.allCategories}">Todas las categorías</option>
+                    <option th:each="c : ${categorias}" th:value="${c.codigo}" th:selected="${c.codigo == categoria}" th:text="${#messages.msgOrNull('categoria.' + c.codigo) ?: c.codigo}"></option>
+                </select>
+                <label class="form-label" for="tecnologia" th:text="#{filter.technology}">Tecnología</label>
+                <select class="form-select" name="tecnologia" id="tecnologia">
+                    <option value="" th:text="#{filter.allTechnologies}">Todas las tecnologías</option>
+                    <option th:each="t : ${tecnologias}" th:value="${t.id}" th:selected="${t.id == tecnologia}" th:text="${t.nombre}"></option>
+                </select>
+                <label class="form-label" for="anio" th:text="#{filter.year}">Año académico</label>
+                <select class="form-select" name="anio" id="anio">
+                    <option value="" th:text="#{filter.allYears}">Todos los años</option>
+                    <option th:each="a : ${anios}" th:value="${a}" th:selected="${anio != null and a.intValue() == anio}" th:text="${a}"></option>
+                </select>
+                <button class="btn btn-primary w-100 filter-submit" type="submit" th:text="#{filter.apply}">Aplicar filtros</button>
+                <a class="reset-link" th:href="@{/proyectos}" th:text="#{filter.reset}">Limpiar filtros</a>
+            </form>
+            <div class="filter-help"><span aria-hidden="true">↗</span><p th:text="#{filter.help}">Cada proyecto es un punto de partida. Explora su código y construye tu propia idea.</p></div>
+        </aside>
+        <section class="catalog-content" aria-labelledby="catalogo-titulo">
+            <div class="catalog-heading"><h2 id="catalogo-titulo" th:text="#{catalog.title}">Explorar proyectos</h2><span class="catalog-label" th:text="#{catalog.label}">CONOCIMIENTO COMPARTIDO</span></div>
+            <div class="search-bar">
+                <label class="visually-hidden" for="q" th:text="#{search.label}">Buscar proyectos</label>
+                <span class="search-icon" aria-hidden="true">⌕</span>
+                <input class="form-control" form="filtros" type="search" id="q" name="q" maxlength="120" th:value="${q}" th:placeholder="#{search.placeholder}" aria-describedby="search-help" autocomplete="off">
+                <button class="btn btn-primary" form="filtros" type="submit" th:text="#{search.button}">Buscar</button>
+            </div>
+            <p class="search-help" id="search-help" th:text="#{search.help}">Busca en el título y resumen. Puedes combinar los filtros.</p>
+            <p id="search-status" class="visually-hidden" role="status" aria-live="polite" th:attr="data-loading=#{search.loading},data-error=#{search.error}"></p>
+            <div th:replace="~{fragments/resultados :: resultados}"></div>
+        </section>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/vendor/jquery-3.7.1.min.js}" defer></script>
+<script th:src="@{/js/catalogo.js}" defer></script>
+</body>
+</html>
