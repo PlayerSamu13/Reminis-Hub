@@ -1,0 +1,32 @@
+# Configuracion local del IDE (incluye la raiz y los modulos).
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Secretos y certificados privados. Los ejemplos sin secretos si se versionan.
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-secrets.*
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.pem
+*.key
+*.csr
+
+# Resultados locales y temporales.
+target/
+*.log
+*.tmp
+*.bak
+*.swp
+Thumbs.db
+Desktop.ini
+.DS_Store
+~$*
