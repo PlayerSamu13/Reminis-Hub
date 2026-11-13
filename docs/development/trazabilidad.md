@@ -179,4 +179,32 @@ M4 parte de observaciones concretas: los bundles usan siempre plural; CatalogoSe
 
 [Evaluación] Riesgo alto por autenticación, Google/HTTPS, escritura, triggers, reporte y validación humana aún pendientes. La asistencia acelera implementación, pero no sustituye comprensión, credenciales del proveedor ni cinco participantes reales. No se recorta ningún obligatorio. Si los hitos exceden la disponibilidad, corresponde negociar explícitamente alcance/plazo con el docente; primero reducir fidelidad visual y RF-12 opcional.
 
-Siguiente control propuesto: aprobar M1–M3, completar defensa E1B y cerrar su aceptación antes de autorizar E2. Confirmar con el docente Angular/MySQL y convocar participantes reales sigue siendo una tarea del estudiante.
+Siguiente control propuesto en ese momento: aprobar M1–M3, completar defensa E1B y cerrar su aceptación antes de autorizar E2. Confirmar con el docente Angular/MySQL y convocar participantes reales sigue siendo una tarea del estudiante.
+
+## Avance M1–M3 — 13/11/2026
+
+Autorizacion: respuesta «Sí» a M1–M3 y posterior «Continua con la elaboración proyecto, realizando la trazabilidad mediante git». Se conserva el permiso de commits de seguimiento, sin atribuir aceptacion final de E1B. M4/M5 siguen pendientes de aprobacion.
+
+Commit `b8c7df5`: «Creación de la verificación de pruebas y protección de archivos locales». Las evidencias de M3 se registran en un commit documental posterior, identificable con `git log -- docs/evidencias`.
+
+- M1 implementada: .gitignore raiz protege IDE, secretos, claves y temporales. `git check-ignore -v` confirma .idea, .env, configuracion local, claves y target; src/docs y .env.example siguen versionables. No borra archivos existentes.
+- M2 implementada: scripts/verificar.ps1 activa las suites opcionales y verifica los XML de la ejecucion mediante un identificador unico. Rechaza omisiones, errores, suites faltantes y cantidades inferiores a las actuales; restaura las variables modificadas. Los valores privados se ocultan antes de escribir logs. Uso en scripts/README.md.
+- M3 revisada parcialmente: detalle, filtros, paginacion, vacio ES/EN, teclado y dos anchos verificados. Lighthouse completo en dos vistas, con hallazgo de nombres accesibles pese a puntuacion 100. Axe independiente bloqueado por ChromeDriver ausente; prueba sin JavaScript pendiente. Evidencia y propuesta M6 en docs/evidencias/README.md. No se declara conformidad WCAG ni cierre de M3.
+
+### Validacion del verificador
+
+| Caso | Estado | Resultado |
+|---|---|---|
+| Variables de conexion ausentes | PASS | Rechaza antes de iniciar Maven; imprime nombres, no valores. |
+| Maven simulado termina con error | PASS | Salida 1 del verificador. |
+| Maven simulado exitoso sin informes nuevos | PASS | Rechaza resultados antiguos. |
+| Suite ausente o pruebas omitidas | PASS | Ambos casos rechazados con salida 1; fixture local en target, sin acceso a DB. |
+| Log con secreto simulado | PASS | El valor se sustituye por [OCULTO] antes de guardarse. |
+| Ejecucion real con Maven local | PASS | 10 pruebas sin fallos/errores/omisiones. Sufijo 4c5c717d5d2b4b7d9b969b37e61b90f3. |
+| Ejecucion final con Wrapper predeterminado | PASS | `scripts/verificar.ps1 -Offline`: 10 pruebas sin fallos/errores/omisiones; sufijo 0a417e897b0b4bee9b090fb788c341a0. Incluye proteccion del log. |
+
+Durante la implementacion se corrigio un falso rechazo: Surefire agrega parentesis al nombre XML, pero guion al archivo. Ahora se identifica la suite desde el nombre de archivo documentado, sin aceptar informes antiguos. No se cambiaron pruebas Java ni migraciones.
+
+Tu turno pendiente: ejecutar el comando documentado en tu terminal con las variables locales y comunicar solo el resumen PASS/FAIL. Defensa pendiente: por que comprobar omisiones ademas del codigo de salida; por que .gitignore no elimina secretos ya versionados; por que Lighthouse 100 no equivale a conformidad WCAG.
+
+Fecha actual 13/11: hasta el congelamiento del 20 quedan seis dias completos disponibles despues de hoy (14–17 y 19–20), 6–24 horas, mas lo que realmente quede disponible hoy; reservar 21–22 para cierre. Se conserva el riesgo alto y no se recorta alcance obligatorio.
