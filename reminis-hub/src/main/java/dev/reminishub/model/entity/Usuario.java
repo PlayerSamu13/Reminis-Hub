@@ -73,7 +73,7 @@ public class Usuario {
         return rol;
     }
 
-    public void getRol(RolUsuario nuevoRol) {
+    public void setRol(RolUsuario nuevoRol) {
         this.rol = nuevoRol;
     }
 
@@ -81,7 +81,7 @@ public class Usuario {
         return activo;
     }
 
-    public void setNombre(Boolean nuevoActivo) {
+    public void setActivo(Boolean nuevoActivo) {
         this.activo = nuevoActivo;
     }
 

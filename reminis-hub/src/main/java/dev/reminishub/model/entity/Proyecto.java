@@ -61,7 +61,8 @@ public class Proyecto {
     @Column(name = "terminos_version", nullable = false, length = 30)
     private String terminosVersion;
 
-    @Column(name = "es_ficticio", nullable = false, updatable = false)
+    // La base asigna false; las semillas SQL controladas identifican los datos ficticios.
+    @Column(name = "es_ficticio", nullable = false, insertable = false, updatable = false)
     private Boolean esFicticio = false;
 
     @Version
