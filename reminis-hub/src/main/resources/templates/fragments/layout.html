@@ -11,15 +11,15 @@
 <header th:fragment="header" class="site-header">
     <a class="skip-link" href="#contenido" th:text="#{nav.skip}">Saltar al contenido</a>
     <div class="container site-nav">
-        <a class="brand" th:href="@{/}" aria-label="ReminisHub">
+        <a class="brand" th:href="@{/}">
             <span class="brand-mark" aria-hidden="true">r<span>.</span></span>
             <span>Reminis<span class="brand-accent">Hub</span><small th:text="#{brand.subtitle}">Ideas que continúan</small></span>
         </a>
         <nav class="nav-links" th:attr="aria-label=#{nav.main}">
             <a class="nav-catalog" th:href="@{/proyectos}" th:text="#{nav.catalog}">Explorar proyectos</a>
-            <div class="language-switch" th:attr="aria-label=#{nav.language}">
-                <a th:href="${idiomaEs}" lang="es" hreflang="es" aria-label="Español" th:attr="aria-current=${#locale.language == 'es' ? 'true' : null}">ES</a>
-                <a th:href="${idiomaEn}" lang="en" hreflang="en" aria-label="English" th:attr="aria-current=${#locale.language == 'en' ? 'true' : null}">EN</a>
+            <div class="language-switch" role="group" th:attr="aria-label=#{nav.language}">
+                <a th:href="${idiomaEs}" lang="es" hreflang="es" aria-label="ES — Español" th:attr="aria-current=${#locale.language == 'es' ? 'true' : null}">ES</a>
+                <a th:href="${idiomaEn}" lang="en" hreflang="en" aria-label="EN — English" th:attr="aria-current=${#locale.language == 'en' ? 'true' : null}">EN</a>
             </div>
         </nav>
     </div>
