@@ -12,11 +12,11 @@
 
 ## Estado por requisito
 
-Ningún requisito está APROBADO. Criterios de rúbrica: 1 frontend; 2 backend; 3 datos; 4 seguridad; 5 i18n, accesibilidad, usabilidad y reporte.
+E1B aceptada expresamente el 14/11/2026. Criterios de rúbrica: 1 frontend; 2 backend; 3 datos; 4 seguridad; 5 i18n, accesibilidad, usabilidad y reporte.
 
 | ID | Estado | Evidencia o pendiente | Rúbrica |
 |---|---|---|---|
-| RF-01, RF-02, RF-03, RF-04 | EN VERIFICACIÓN | E1B: catálogo, filtros combinables, paginación, detalle y búsqueda AJAX; pendiente aceptación humana. | 1, 2, 3 |
+| RF-01, RF-02, RF-03, RF-04 | APROBADO | E1B aceptada el 14/11: catálogo, filtros combinables, paginación, detalle y búsqueda AJAX. Mejoras M4/M5 pendientes, sin ocultar sus límites. | 1, 2, 3 |
 | RF-05, RF-06 | PENDIENTE | Dependencias presentes, sin autenticación propia. | 4 |
 | RF-07, RF-08 | EN DESARROLLO | Entidades y V2; falta flujo de presentación y moderación. | 1, 2, 4 |
 | RF-09 | EN DESARROLLO | Tabla/entidad de bitácora; sin triggers. | 3, 4 |
@@ -27,7 +27,7 @@ Ningún requisito está APROBADO. Criterios de rúbrica: 1 frontend; 2 backend; 
 | NF-02, NF-03, NF-04 | PENDIENTE | Sin evidencia de JWT/cookies, HTTPS, permisos de negocio u OWASP. | 4 |
 | NF-05 | EN DESARROLLO | JavaDoc de ping, DTO y contratos del catálogo; generación y cobertura completa pendientes. | 2 |
 | NF-06 | EN DESARROLLO | 10 pruebas: 7 catálogo, 2 esquema y 1 contexto; faltan pruebas de los flujos aún no implementados. | 2, 3 |
-| NF-07 | EN DESARROLLO | E1B: HTML semántico, etiquetas, foco, salto al contenido y movimiento reducido; auditorías Lighthouse/axe pendientes. | 5 |
+| NF-07 | EN DESARROLLO | E1B: etiquetas, foco, teclado y auditorías Lighthouse/axe verificadas; deberá revisarse cada nueva vista. No implica conformidad global. | 5 |
 | NF-08, NF-09 | PENDIENTE | Faltan estudio real y documentación académica. | 5, Todos |
 
 ## E1A — evidencia y límites
@@ -228,3 +228,60 @@ HTTP: GET `/api/v1/proyectos` y `?pagina=1` entregaron 6+2 registros sin IDs rep
 Ejercicio del estudiante recibido y revisado: su salida permitio detectar esta incidencia real. Pendiente que vuelva a ejecutar y comparta solo RESUMEN/PASS/FAIL. No hace falta habilitar -X ni compartir credenciales. El commit de esta correccion se identifica con `git log -- scripts/verificar.ps1`.
 
 Al 14/11 quedan cinco dias completos disponibles despues de hoy hasta el 20 (15–17 y 19–20), 5–20 horas mas el tiempo disponible hoy. El riesgo alto de los requisitos aun pendientes se mantiene; esta correccion no constituye aceptacion de E1B ni implementacion de autenticacion/CRUD/reporte.
+
+## Seguimiento del 14/11/2026 — M6 y defensa E1B
+
+[Declarado por el estudiante] Confirma que el codigo corregido funciona correctamente en su terminal. Se da por recibido su ejercicio de ejecucion; no se inventa un nuevo informe Surefire de su entorno. La correccion previa esta en 6efdd8f.
+
+[Verificado: respuestas del estudiante] Defensa conceptual satisfactoria: filtrar PUBLICADO en servidor restringe acceso; DTO limita el contrato expuesto; las pruebas de modulos existentes no verifican funcionalidades aun ausentes. Se preciso que DTO no sustituye autorizacion y que auditoria automatica tampoco sustituye revision manual.
+
+[Verificado: fragments/layout.html] M6 expresamente aprobada e implementada: nombre accesible derivado del contenido de marca y nombres ES/EN que incluyen las siglas visibles. Se aprobo por separado role="group" para el selector de idiomas. No se modificaron migraciones ni dependencias de la aplicacion.
+
+[Verificado: scripts/verificar.ps1 -Offline] Nueva ejecucion real: 10 pruebas, 0 fallos, 0 errores, 0 omitidas; sufijo 47fb8b52327c499991743a31735bdff5. Ejecutada tras M6 inicial; el role anadido despues se verifico mediante WebDriver sobre las cuatro vistas finales.
+
+[Verificado: scripts/auditar-catalogo.cjs] Axe 4.14.0 con Edge WebDriver: cero infracciones en catalogo/detalle ES/EN, incluida regla experimental de coincidencia del nombre. PASS de nombres accesibles y recorrido sin JavaScript. La limitacion anterior de ChromeDriver queda resuelta utilizando Edge WebDriver. Evidencia completa en docs/evidencias; se conservan revisiones incomplete de contraste, sin afirmar conformidad WCAG.
+
+Estado: E1B sigue EN VERIFICACION hasta aceptacion explicita. Defensa respondida; ficha final pendiente de aceptacion conforme a AGENTS.md. M4/M5 siguen sin aprobacion. La correccion M6 no implementa autenticacion, CRUD privado, auditoria por triggers ni reportes. El siguiente bloque funcional debe abordar seguridad local/HTTPS y autenticacion, dividido para mantener el contrato docente y las pruebas. No se inicia codigo de E2 en este seguimiento.
+
+[Verificado: lighthouse-catalogo-es.json y lighthouse-detalle-en.json] Lighthouse final del 14/11: accesibilidad 100 y coincidencia de nombre aprobada en ambas vistas, sin auditorias binarias fallidas. Primer intento bloqueado por puerto dinamico de Edge; reintento exitoso con puerto fijo 9222. No se convierte este resultado en una declaracion global de conformidad.
+
+## Cierre E1B y plan siguiente — 14/11/2026
+
+[Declarado por el estudiante] E1B APROBADA. Solicita plan preciso de una etapa superior, sin modificaciones grandes, con 6% de limite semanal restante. Se conserva autorizacion de commits locales; no de push. La ficha aceptada es docs/defensa/etapa-01b.md. Esta seccion sustituye el estado historico de aceptacion pendiente, no elimina los limites de las evidencias.
+
+[Verificado: git] Cierre tecnico registrado en `74be6a4`, «Corrección de los nombres accesibles y verificación del catálogo». El commit documental siguiente incorpora aceptacion, ficha y plan; localizarlo con `git log -- docs/defensa/etapa-01b.md`. No se repitio la suite Java en el cierre documental: no hubo cambios de aplicacion desde las verificaciones registradas.
+
+### E2 propuesta: identidad y seguridad de acceso
+
+Objetivo: registro e inicio local, JWT propio en cookie segura, logout y Google OIDC, manteniendo catalogo publico. RF-05/RF-06 y avance NF-02/NF-03; criterio de seguridad y aportes a frontend/backend. No incluye todavia CRUD, moderacion o reporte. Plan propuesto, NO implementado ni autorizado para ejecucion por esta aprobacion de E1B.
+
+[Verificado: pom.xml, SecurityConfig, Usuario e IdentidadExterna] Existen Boot 4.1.2, Java 25, starters Security/OAuth2/resource-server, usuario con passwordHash/rol/activo e identidad con proveedor/subject. SecurityConfig permite GET publicos y deniega el resto; no hay autenticacion propia. No hace falta partir de otro stack. [Por confirmar antes de programar] Versiones transitivas reales y compatibilidad de thymeleaf-extras-springsecurity6; verificar documentacion oficial de Security/JOSE y no agregar o actualizar dependencias por intuicion.
+
+Dividir E2 en hitos de hasta unas cuatro horas del estudiante; si alguno excede ese limite, subdividir antes de programar. No son estimaciones garantizadas de tiempo de IA.
+
+| Hito | Cambios previstos | Pruebas y salida exigida |
+|---|---|---|
+| E2A: HTTPS local | Perfil de configuracion y guia/script local de certificado; secretos y keystore fuera de Git. Sin instalar confianza global automaticamente. | Arranque HTTPS; certificado y SAN para hostname elegido; recursos locales y catalogo ES/EN funcionan. No usar omitir validacion TLS como prueba de confianza. |
+| E2B: registro local | UsuarioRepository, servicio transaccional, DTO/formulario mutable, controlador y vista ES/EN; BCrypt; rol COLABORADOR fijado en servidor. | Registro valido, duplicado y carrera de unicidad, datos invalidos, hash distinto del texto, rechazo de rol/activo enviados por cliente, CSRF y rollback PostgreSQL. Revisar politica de correo contra unicidad actual; si exige esquema, proponer nueva migracion. |
+| E2C: login/JWT/logout | SecurityConfig y componentes de autenticacion; contratos de login y usuario actual; cookie HttpOnly/Secure, SameSite y vigencia documentados; logout por POST con CSRF. | Login correcto/incorrecto/inactivo; JWT alterado/caducado; API 401/403; redireccion web; cookie y CSRF en formularios/AJAX; logout. Precisar que borrar cookie no revoca por si solo un JWT robado: decidir politica y probarla antes de aceptar. |
+| E2D: Google OIDC | Repositorio de identidad, flujo Spring OAuth2 y emision del mismo JWT propio. | Proveedor+sub unico; rechazo de vinculacion automatica solo por correo; state/redirect, errores del proveedor, usuario inactivo y flujo real de navegador. Pruebas simuladas no sustituyen login real con Google. |
+
+Archivos: dentro de reminis-hub/src/main/java/dev/reminishub/{config,service,repository,dto,controller}, templates y bundles ES/EN existentes; pruebas en src/test/java; documentacion y scripts locales. No tocar migraciones aplicadas, recursos visuales ni datos ficticios. pom.xml solo si una necesidad concreta y compatibilidad verificadas justifican aprobacion adicional.
+
+Dependencias externas: PostgreSQL local disponible; certificado/clave privados; cliente Google y URI exacta de retorno admitida por proveedor, comprobada antes de E2D. Credenciales solo en configuracion local, nunca en chat. Preparar estas condiciones temprano; si falta Google, marcar BLOCKED ese flujo, no declarar RF-06 completo. Revisar base aislada disponible antes de pruebas con escrituras.
+
+Contenido docente: HTTPS protege transporte; BCrypt protege contrasenas almacenadas; JWT autentica; CSRF protege peticiones basadas en cookies; autorizacion decide permisos. Alternativa descartada: guardar tokens en localStorage o desactivar CSRF. Tu turno por hito: comprobar certificado; completar validacion pequena; escribir prueba de acceso sin autenticar; explicar/pruebar identidad proveedor+sub. Reservar piezas antes de implementar, revisar intento, cerrar con 3–5 preguntas y ficha tras aceptacion.
+
+Aceptacion: PASS de casos del hito, regresion del catalogo, diff sin secretos y defensa comprendida; NOT RUN/BLOCKED explicitos no se cuentan como PASS. Conservar CSRF y autorizacion en servidor. Revisar APIs oficiales al implementar, no asumir que este plan verifica compatibilidad tecnica futura. Cada hito requiere OK plan, aceptacion y transicion conforme a AGENTS.md.
+
+### Orden posterior y control del plazo
+
+1. E3: presentacion/CRUD con propiedad, autores y consentimiento; moderacion y Mis propuestas. Incorporar auditoria de altas/cambios de estado junto a las primeras escrituras: trigger con actor autenticado en la misma transaccion/conexion; rollback y reutilizacion de conexiones probados.
+2. E4: consultas JDBC, reporte/CSV contrastados con SQL, bitacora administrativa, JavaDoc/OpenAPI y revision OWASP aplicable.
+3. E5: integracion, accesibilidad de nuevas vistas, tres tareas reales con al menos cinco participantes, SUS/utilidad y documentacion final. Convocar participantes ahora; ejecutar las tareas cuando existan los flujos. No inventar resultados.
+
+[Declarado] Entrega 23/11, congelamiento deseado 20/11, 1–4 h/dia salvo miercoles. Al 14/11 quedan cinco dias completos disponibles hasta el 20 despues de hoy (15–17, 19–20), mas lo disponible hoy; 21–22 para cierre. [Evaluacion] Riesgo alto: el limite semanal puede impedir el calendario; no se conoce su fecha de renovacion ni se promete completar con 6%. No recortar autenticacion/Google, CRUD, auditoria, reporte, i18n o evaluacion humana. Si no caben, negociar plazo/alcance con docente antes de presentar un entregable incompleto como conforme. M4/M5 continuan propuestas sin aprobar; no son prerrequisito para iniciar E2A.
+
+### Retomar con poco contexto
+
+Leer AGENTS.md, esta seccion, scripts/README.md y git status/log. Conservar codigo y evidencias aprobados; no repetir diagnostico ni auditorias sin cambios relevantes. Ejecutar un hito a la vez, una compilacion a la vez, sin agentes innecesarios. Registrar resultados resumidos y commit por unidad verificada con el estilo del estudiante. Primera accion futura: aprobar el plan E2A y verificar requisitos locales de HTTPS; no iniciar E2 completa de una vez. En esta sesion solo se cierra E1B y se deja este plan.
