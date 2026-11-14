@@ -208,3 +208,23 @@ Durante la implementacion se corrigio un falso rechazo: Surefire agrega parentes
 Tu turno pendiente: ejecutar el comando documentado en tu terminal con las variables locales y comunicar solo el resumen PASS/FAIL. Defensa pendiente: por que comprobar omisiones ademas del codigo de salida; por que .gitignore no elimina secretos ya versionados; por que Lighthouse 100 no equivale a conformidad WCAG.
 
 Fecha actual 13/11: hasta el congelamiento del 20 quedan seis dias completos disponibles despues de hoy (14–17 y 19–20), 6–24 horas, mas lo que realmente quede disponible hoy; reservar 21–22 para cierre. Se conserva el riesgo alto y no se recorta alcance obligatorio.
+
+## Incidencia del verificador — revision cerrada el 14/11/2026
+
+[Verificado: Surefire] El estudiante ejecuto el comando y reporto 10 errores el 13/11 a las 17:35. Los tres informes con sufijo `a99061e1fea7431c88455ba860e79d05` muestran 7+2+1 errores. La causa de arranque es `IllegalArgumentException: 'url' must start with "jdbc"`; la prueba JDBC directa falla tambien con `No suitable driver`. No son diez fallos independientes del catalogo: la configuracion impide establecer la conexion y arrancar los contextos. No se imprimio el valor privado de conexion ni se supone como lo introdujo el estudiante.
+
+[Verificado: scripts/verificar.ps1] Habia ademas un defecto del verificador: rechazaba el codigo no cero de Maven antes de leer XML y mostrar contadores. Se corrige para resumir todas las suites disponibles, conservar un resumen.txt y devolver FAIL cuando corresponde. Se valida previamente una URL PostgreSQL con host y base, sin asignaciones, espacios, variables concatenadas ni credenciales incorporadas. Las variables de la terminal del estudiante no se modificaron desde Codex; scripts/README.md contiene los comandos no secretos para configurarlas correctamente.
+
+| Comprobacion | Estado | Evidencia |
+|---|---|---|
+| Regresion del verificador | PASS | `scripts/probar-verificador.ps1`: siete escenarios sinteticos, sin PostgreSQL. Rechaza URL invalida, Maven fallido, informes ausentes, suite ausente, omisiones y diez errores; acepta ejecucion correcta. Comprueba ocultacion del secreto simulado en salida/log. |
+| Suite real tras correccion | PASS | `scripts/verificar.ps1 -Offline`, configuracion existente de IntelliJ cargada solo en el proceso de verificacion: 10 pruebas, 0 fallos, 0 errores, 0 omitidas; Maven=0. Sufijo `695dbe14b8324c5a9e686996a0c3c0ec`. |
+| Servidor y HTTP real | PASS | Arranque en 127.0.0.1:8081 y 14 solicitudes con Invoke-WebRequest -SkipHttpErrorCheck; detalle abajo. Servidor detenido al finalizar. |
+| Nueva revision visual/auditoria | NOT RUN | No hubo cambios de HTML/CSS/JS en esta correccion. Se conserva la evidencia visual y Lighthouse del 13/11, con hallazgo M6 pendiente; axe independiente y prueba sin JavaScript siguen pendientes. |
+| Nueva ejecucion en la terminal del estudiante | NOT RUN | Falta repetir con DB_URL corregida en su propia terminal. El PASS de Codex no certifica ese entorno. |
+
+HTTP: GET `/api/v1/proyectos` y `?pagina=1` entregaron 6+2 registros sin IDs repetidos; GET `/proyectos/8` devolvio detalle con aviso ficticio; GET `/proyectos?lang=es` y `?lang=en` devolvieron textos esperados; GET `/catalogo/resultados?q=SinCoincidenciaQA` devolvio estado vacio sin cabecera completa; GET `/api/v1/proyectos?categoria=WEB&anio=2026&q=Aula` devolvio un resultado. Pagina -1: 400; ID inexistente: 404; POST sin CSRF: 403. CSS, JS, jQuery y Bootstrap locales: 200. Cabecera X-Content-Type-Options: nosniff. No se crearon proyectos ni se modificaron migraciones.
+
+Ejercicio del estudiante recibido y revisado: su salida permitio detectar esta incidencia real. Pendiente que vuelva a ejecutar y comparta solo RESUMEN/PASS/FAIL. No hace falta habilitar -X ni compartir credenciales. El commit de esta correccion se identifica con `git log -- scripts/verificar.ps1`.
+
+Al 14/11 quedan cinco dias completos disponibles despues de hoy hasta el 20 (15–17 y 19–20), 5–20 horas mas el tiempo disponible hoy. El riesgo alto de los requisitos aun pendientes se mantiene; esta correccion no constituye aceptacion de E1B ni implementacion de autenticacion/CRUD/reporte.

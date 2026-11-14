@@ -16,6 +16,8 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+# El codigo no cero de Maven se procesa despues de leer sus informes, tambien en PS 7.
+$PSNativeCommandUseErrorActionPreference = $false
 $modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'reminis-hub'
 $changedVariables = @('CATALOGO_DB_TESTS', 'E1A_DB_CHECKS', 'SPRING_JPA_SHOW_SQL')
 $previousValues = @{}
@@ -37,6 +39,13 @@ try {
         [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_, 'Process'))
     }
     if ($missing) { throw ('Faltan variables de entorno: ' + ($missing -join ', ')) }
+    $databaseUri = $null
+    if (!$env:DB_URL.StartsWith('jdbc:postgresql://', [StringComparison]::Ordinal) -or
+        $env:DB_URL -match '[\s;]' -or
+        ![Uri]::TryCreate($env:DB_URL.Substring(5), [UriKind]::Absolute, [ref]$databaseUri) -or
+        !$databaseUri.Host -or $databaseUri.AbsolutePath -eq '/' -or $databaseUri.UserInfo) {
+        throw 'DB_URL invalida: usa solo jdbc:postgresql://host:puerto/base, sin DB_URL= ni otras variables. Configura DB_USER y DB_PASSWORD por separado.'
+    }
     if (!$MavenCommand) { $MavenCommand = Join-Path $modulePath 'mvnw.cmd' }
     $maven = (Get-Command $MavenCommand -ErrorAction Stop).Source
     $runId = [Guid]::NewGuid().ToString('N')
@@ -55,11 +64,14 @@ try {
     # Ocultar valores privados antes de escribir el log, incluso si Maven falla.
     & $maven @mavenArgs 2>&1 | ForEach-Object { Protect-Text ([string]$_) } |
         Out-File -LiteralPath $logPath -Encoding utf8
-    if ($LASTEXITCODE -ne 0) { throw 'Maven termino con errores. Revisa el log local sin compartir secretos.' }
+    $mavenExitCode = $LASTEXITCODE
 
     $reportsPath = Join-Path $modulePath 'target/surefire-reports'
-    $reports = @(Get-ChildItem -LiteralPath $reportsPath -Filter "TEST-*-$runId.xml")
-    if ($reports.Count -eq 0) { throw 'Maven no genero informes de esta ejecucion.' }
+    $reports = @()
+    if (Test-Path -LiteralPath $reportsPath) {
+        $reports = @(Get-ChildItem -LiteralPath $reportsPath -Filter "TEST-*-$runId.xml")
+    }
+    if ($reports.Count -eq 0) { throw "Maven termino con codigo $mavenExitCode sin informes de esta ejecucion. Pruebas: NOT RUN; revisa el log local." }
     $expected = @{
         'dev.reminishub.CatalogoIntegrationTests' = 7
         'dev.reminishub.EsquemaExistenteTests' = 2
@@ -67,25 +79,43 @@ try {
     }
     $seen = @{}
     $total = 0
+    $failures = 0
+    $errors = 0
+    $skipped = 0
+    $invalidSuite = $false
+    $urlError = $false
+    $summary = [Collections.Generic.List[string]]::new()
     foreach ($report in $reports) {
         [xml]$xml = Get-Content -LiteralPath $report.FullName -Raw
         $suite = $xml.testsuite
         # El XML usa parentesis en el nombre; el archivo conserva TEST-clase-sufijo.xml.
         $name = $report.BaseName.Substring(5) -replace ('-' + $runId + '$'), ''
         $tests = [int]$suite.tests
-        if ([int]$suite.failures -gt 0 -or [int]$suite.errors -gt 0 -or [int]$suite.skipped -gt 0) {
-            throw "Suite con fallos, errores u omisiones: $name"
-        }
-        if ($tests -lt 1) { throw "Suite sin pruebas ejecutadas: $name" }
+        $failed = [int]$suite.failures -gt 0 -or [int]$suite.errors -gt 0 -or [int]$suite.skipped -gt 0 -or $tests -lt 1
+        $invalidSuite = $invalidSuite -or $failed
         $seen[$name] = $tests
         $total += $tests
-        Write-Host "PASS: $name ($tests pruebas)"
+        $failures += [int]$suite.failures
+        $errors += [int]$suite.errors
+        $skipped += [int]$suite.skipped
+        $state = if ($failed) { 'FAIL' } else { 'PASS' }
+        $summary.Add("${state}: $name; pruebas=$tests, fallos=$($suite.failures), errores=$($suite.errors), omitidas=$($suite.skipped)")
+        foreach ($problem in $xml.SelectNodes('//testcase/error | //testcase/failure')) {
+            # Solo clasificar causas conocidas; nunca imprimir trazas o valores de conexion.
+            if ($problem.InnerText -match "'url' must start with|No suitable driver") { $urlError = $true }
+        }
     }
     foreach ($name in $expected.Keys) {
         if (!$seen.ContainsKey($name) -or $seen[$name] -lt $expected[$name]) {
-            throw "Suite ausente o incompleta: $name"
+            $invalidSuite = $true
+            $summary.Add("FAIL: suite ausente o incompleta: $name")
         }
     }
+    $summary.Add("RESUMEN: pruebas=$total, fallos=$failures, errores=$errors, omitidas=$skipped; codigo Maven=$mavenExitCode")
+    if ($urlError) { $summary.Add('DIAGNOSTICO: URL JDBC o controlador no valido. Revisa DB_URL y posibles propiedades Spring que sustituyan la conexion.') }
+    $summary | ForEach-Object { Write-Host (Protect-Text $_) }
+    $summary | ForEach-Object { Protect-Text $_ } | Set-Content -LiteralPath (Join-Path $outputPath 'resumen.txt') -Encoding utf8
+    if ($mavenExitCode -ne 0 -or $invalidSuite) { throw 'Verificacion fallida; consulta el resumen anterior y el log local protegido.' }
     Write-Host "PASS: $total pruebas, sin fallos, errores ni omisiones."
     Write-Host "Informes: $reportsPath (sufijo $runId)"
     $exitCode = 0
