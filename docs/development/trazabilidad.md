@@ -1,5 +1,26 @@
 # ReminisHub — trazabilidad
 
+## Estado actual — 16/11/2026
+
+- Etapa en curso: HTTPS local, OK plan recibido el 16/11; estabilizacion cerrada.
+- Rama: codex/estabilizacion-catalogo; ultimo commit aprobado: fba3f95 (E1B).
+- Stack confirmado nuevamente: Thymeleaf y PostgreSQL.
+- Base autorizada de pruebas: jdbc:postgresql://localhost:5432/reminishub_test.
+- reminishub_dev es produccion segun el estudiante; excluirla de pruebas.
+- Arranque: Maven Wrapper spring-boot:run con variables locales configuradas.
+- Pruebas: scripts/verificar.ps1 -Offline desde la raiz.
+- D1–D7 resueltas conforme a la seccion siguiente.
+- Cambios en revision: capas, singular/plural, recuperacion de pagina y Swagger.
+- Ejercicio de estado vacio EN revisado; regresion PostgreSQL PASS, 14 pruebas.
+- Estabilizacion: defensa revisada; teclado/Swagger confirmados por el estudiante.
+- E2 y requisitos de escritura/reporte siguen pendientes.
+
+Cierre autorizado: el estudiante delego la evaluacion final y confirmo continuar. Se corrigio su uso de «segregacion de validacion»: la cobertura depende de las aserciones y la independencia entre pruebas es una propiedad distinta. Ficha etapa-01c.md. Preferencia docente vigente: dificultad adaptativa, con preguntas de diagnostico y defensa de alternativas tras respuestas correctas; explicar y volver a comprobar errores conceptuales. La autorizacion de HTTPS no acepta anticipadamente esa etapa.
+
+Seguimiento de estabilizacion: recuperacion de pagina conserva filtros/idioma, claves singular/plural conectadas y GET de Swagger permitidos. README principal creado. Se agregaron tres pruebas de integracion; ejercicio de vacio EN reservado al estudiante. Compilacion de aplicacion y pruebas PASS con Maven Wrapper/JDK 25; ejecucion PostgreSQL BLOCKED por variables privadas ausentes en este proceso. Revision de navegador NOT RUN. Ninguna de estas pruebas nuevas se declara aprobada por compilar. Cierre, defensa y commit pendientes.
+
+Actualizacion posterior: el estudiante ejecuto scripts/verificar.ps1 y aporto el sufijo 51e66be439874f20b3460077612bd9c0. [Verificado: XML de Surefire] 11 pruebas de catalogo + 2 de esquema + 1 de contexto, 0 fallos, 0 errores y 0 omitidas. Revisado validarEstadoVacioEn: consulta unica con marca + ausente, lang=en y aserciones de 200, contador cero y mensaje vacio. Ejercicio completado correctamente. git diff --check PASS. El bloqueo de ejecucion queda resuelto por esta evidencia de la terminal del estudiante; navegador y defensa siguen pendientes. No se repitio la suite.
+
 ## Decisiones vigentes (2026-11-12)
 
 - Anteproyecto: `C:/Users/samuq/Downloads/formato_anteproyecto-PW.pdf`, leído completo.

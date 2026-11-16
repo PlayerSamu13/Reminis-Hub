@@ -6,19 +6,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import dev.reminishub.service.CatalogoService;
-import dev.reminishub.repository.CategoriaRepository;
-import dev.reminishub.repository.TecnologiaRepository;
 
 @Controller
-public class controllerMVC {
+public class ControllerMVC {
     private final CatalogoService catalogo;
-    private final CategoriaRepository categorias;
-    private final TecnologiaRepository tecnologias;
 
-    public controllerMVC(CatalogoService catalogo, CategoriaRepository categorias, TecnologiaRepository tecnologias) {
+    public ControllerMVC(CatalogoService catalogo) {
         this.catalogo = catalogo;
-        this.categorias = categorias;
-        this.tecnologias = tecnologias;
     }
 
     /** Catálogo completo y fragmento AJAX comparten consulta y plantilla de resultados. */
@@ -36,8 +30,8 @@ public class controllerMVC {
         model.addAttribute("tecnologia", tecnologia);
         if (request.getRequestURI().endsWith("/catalogo/resultados"))
             return "fragments/resultados :: resultados";
-        model.addAttribute("categorias", categorias.findByActivaTrueOrderByOrdenAscCodigoAsc());
-        model.addAttribute("tecnologias", tecnologias.findAllByOrderByNombreAsc());
+        model.addAttribute("categorias", catalogo.categoriasDisponibles());
+        model.addAttribute("tecnologias", catalogo.tecnologiasDisponibles());
         model.addAttribute("anios", catalogo.anios());
         return "catalogo";
     }

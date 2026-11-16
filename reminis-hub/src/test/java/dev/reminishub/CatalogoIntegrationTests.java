@@ -139,6 +139,49 @@ class CatalogoIntegrationTests {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void documentacionPublicaDescribeElCatalogo() throws Exception {
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/proyectos'].get").exists());
+        mvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
+    }
+
+    @Test
+    void paginaFueraDeRangoPermiteVolverConFiltros() throws Exception {
+        for (String idioma : List.of("es", "en")) {
+            mvc.perform(get("/proyectos").param("q", marca).param("anio", "2026")
+                            .param("pagina", "10").param("lang", idioma))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(idioma.equals("es")
+                            ? "Esta página no está disponible" : "This page is unavailable")))
+                    .andExpect(content().string(matchesPattern("(?s).*href=\"/proyectos\\?q="
+                            + marca + "[^\"]*&amp;anio=2026[^\"]*&amp;pagina=0&amp;lang="
+                            + idioma + "\".*")))
+                    .andExpect(content().string(not(containsString("class=\"pagination-bar\""))));
+        }
+    }
+
+    @Test
+    void contadorSingularSeTraduce() throws Exception {
+        for (String idioma : List.of("es", "en")) {
+            mvc.perform(get("/catalogo/resultados").param("q", marca)
+                            .param("tecnologia", Long.toString(tecnologia)).param("lang", idioma))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(idioma.equals("es")
+                            ? "1 proyecto encontrado" : "1 project found")));
+        }
+    }
+
+    // Tu turno: agrega una prueba GET /catalogo/resultados con q=marca + "ausente"
+    // y lang=en. Comprueba 200, "0 projects found" y "No matches yet".
+    @Test
+    void validarEstadoVacioEn() throws Exception {
+        mvc.perform(get("/catalogo/resultados").param("q", marca + "ausente")
+                .param("lang", "en")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("0 projects found")))
+                .andExpect(content().string(containsString("No matches yet")));
+    }
+
     // Ejercicio del estudiante: una página negativa debe rechazarse antes de consultar.
     @Test
     void invalidarPaginasValorNegativo() throws Exception {

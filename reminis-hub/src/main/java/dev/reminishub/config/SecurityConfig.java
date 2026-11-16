@@ -16,7 +16,8 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/proyectos", "/proyectos/*", "/catalogo/resultados",
                         "/css/**", "/js/**", "/vendor/**", "/api/v1/ping",
-                        "/api/v1/proyectos", "/api/v1/proyectos/*").permitAll()
+                        "/api/v1/proyectos", "/api/v1/proyectos/*",
+                        "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors.authenticationEntryPoint(
                         (request, response, exception) -> response.sendError(401)))

@@ -1,12 +1,15 @@
 package dev.reminishub.service;
 
 import dev.reminishub.dto.*;
+import dev.reminishub.model.entity.Categoria;
 import dev.reminishub.model.entity.Proyecto;
 import dev.reminishub.model.entity.ProyectoAutor;
 import dev.reminishub.model.entity.Tecnologia;
 import dev.reminishub.model.enums.EstadoProyecto;
 import dev.reminishub.model.enums.MedioAutorizacion;
+import dev.reminishub.repository.CategoriaRepository;
 import dev.reminishub.repository.ProyectoRepository;
+import dev.reminishub.repository.TecnologiaRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -22,8 +25,14 @@ import java.util.Locale;
 @Transactional(readOnly = true)
 public class CatalogoService {
     private final ProyectoRepository proyectos;
+    private final CategoriaRepository categorias;
+    private final TecnologiaRepository tecnologias;
 
-    public CatalogoService(ProyectoRepository proyectos) { this.proyectos = proyectos; }
+    public CatalogoService(ProyectoRepository proyectos, CategoriaRepository categorias, TecnologiaRepository tecnologias) {
+        this.proyectos = proyectos;
+        this.categorias = categorias;
+        this.tecnologias = tecnologias;
+    }
 
     /** Busca únicamente publicados, con seis resultados y orden determinista por periodo e ID. */
     public PaginaProyectos buscar(String q, String categoria, Integer anio, Long tecnologia, int pagina) {
@@ -58,6 +67,23 @@ public class CatalogoService {
     }
 
     public List<Short> anios() { return proyectos.aniosPublicados(EstadoProyecto.PUBLICADO); }
+    /**
+     * Obtiene las categorías disponibles para filtrar el catálogo.
+     *
+     * @return categorías activas ordenadas por orden y código
+     */
+    public List<Categoria> categoriasDisponibles() {
+        return categorias.findByActivaTrueOrderByOrdenAscCodigoAsc();
+    }
+
+    /**
+     * Obtiene las tecnologías disponibles para filtrar el catálogo.
+     *
+     * @return tecnologías ordenadas por nombre
+     */
+    public List<Tecnologia> tecnologiasDisponibles() {
+        return tecnologias.findAllByOrderByNombreAsc();
+    }
 
     private ProyectoResumen resumen(Proyecto p) {
         return new ProyectoResumen(p.getId(), p.getNombre(), p.getResumen(), p.getCategoria().getCodigo(),

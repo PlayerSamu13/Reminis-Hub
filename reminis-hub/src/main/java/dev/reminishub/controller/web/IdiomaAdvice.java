@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /** Conserva la ruta y los filtros al cambiar de idioma. */
-@ControllerAdvice(basePackageClasses = controllerMVC.class)
+@ControllerAdvice(basePackageClasses = ControllerMVC.class)
 public class IdiomaAdvice {
     @ModelAttribute("idiomaEs")
     public String espanol(HttpServletRequest request) { return enlace(request, "es"); }

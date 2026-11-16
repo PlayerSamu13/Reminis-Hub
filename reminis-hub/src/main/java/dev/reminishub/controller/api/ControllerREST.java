@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
-public class controllerREST {
+public class ControllerREST {
     /**
      * Indica que la API esta en funcionamiento.
      * @return la cadena {@code Todo bien}
