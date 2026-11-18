@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{login.titulo}, #{meta.login})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5 auth-page">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <h1 th:text="#{login.titulo}">Iniciar sesión</h1>
+            <div th:if="${salida == true}" class="alert alert-success mt-4" role="status" th:text="#{login.salida}">Has cerrado la sesión.</div>
+            <form th:action="@{/login}" method="post" class="mt-4">
+                <p th:if="${esperaLogin != null}" class="alert alert-warning" role="alert"
+                   th:text="#{login.espera(${esperaLogin})}"></p>
+                <p th:text="#{login.introduccion}">Accede con la cuenta que creaste en el registro.</p>
+                <div id="login-error" th:if="${credencialesInvalidas == true}" class="alert alert-danger" role="alert" th:text="#{login.credencialesInvalidas}">El correo o la contraseña no son correctos.</div>
+                <div class="mb-3">
+                    <label for="email" class="form-label" th:text="#{login.correo}">Correo electrónico</label>
+                    <input id="email" name="email" type="email" class="form-control" required maxlength="254"
+                           autocomplete="username" th:classappend="${credencialesInvalidas == true} ? 'is-invalid'"
+                           th:autofocus="${credencialesInvalidas == true}"
+                           th:attr="aria-invalid=${credencialesInvalidas == true}, aria-describedby=${credencialesInvalidas == true ? 'login-error' : null}">
+                </div>
+                <div class="mb-4">
+                    <label for="contrasena" class="form-label" th:text="#{login.clave}">Contraseña</label>
+                    <input id="contrasena" name="contrasena" type="password" class="form-control" required
+                           maxlength="72" autocomplete="current-password"
+                           th:classappend="${credencialesInvalidas == true} ? 'is-invalid'"
+                           th:attr="aria-invalid=${credencialesInvalidas == true}, aria-describedby=${credencialesInvalidas == true ? 'login-error' : null}">
+                </div>
+                <div class="d-flex flex-wrap gap-3">
+                    <button class="btn btn-primary" type="submit" th:text="#{login.enviar}">Entrar</button>
+                    <a class="btn btn-outline-secondary" th:href="@{/proyectos}" th:text="#{nav.catalog}">Explorar proyectos</a>
+                </div>
+            </form>
+            <p class="mt-4">
+                <span th:text="#{login.sinCuenta}">¿Todavía no tienes cuenta?</span>
+                <a th:href="@{/registro}" th:text="#{login.registro}">Crear una cuenta</a>
+            </p>
+        </div>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

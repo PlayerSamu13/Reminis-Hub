@@ -2,7 +2,7 @@
 .SYNOPSIS
 Ejecuta Maven y comprueba que las suites obligatorias realmente se ejecutaron.
 .DESCRIPTION
-Requiere Java 25, PostgreSQL y DB_URL, DB_USER, DB_PASSWORD, DEV_USER_PASSWORD
+Requiere Java 25, PostgreSQL y DB_URL, DB_USER, DB_PASSWORD, RH_JWT_SECRET
 en el proceso. No lee configuraciones privadas de IntelliJ ni imprime secretos.
 Los informes llevan un identificador unico para no aceptar resultados antiguos.
 .EXAMPLE
@@ -27,7 +27,7 @@ foreach ($name in $changedVariables) {
 $exitCode = 1
 $locationChanged = $false
 $logPath = $null
-$privateValues = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'DEV_USER_PASSWORD') | ForEach-Object {
+$privateValues = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'RH_JWT_SECRET') | ForEach-Object {
     [Environment]::GetEnvironmentVariable($_, 'Process')
 } | Where-Object { ![string]::IsNullOrEmpty($_) } | Sort-Object Length -Descending
 function Protect-Text([string]$text) {
@@ -35,10 +35,13 @@ function Protect-Text([string]$text) {
     return $text
 }
 try {
-    $missing = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'DEV_USER_PASSWORD') | Where-Object {
+    $missing = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'RH_JWT_SECRET') | Where-Object {
         [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_, 'Process'))
     }
     if ($missing) { throw ('Faltan variables de entorno: ' + ($missing -join ', ')) }
+    if ([Text.Encoding]::UTF8.GetByteCount($env:RH_JWT_SECRET) -lt 32) {
+        throw 'RH_JWT_SECRET debe tener al menos 32 bytes UTF-8: el JWT se firma con HMAC-SHA256.'
+    }
     $databaseUri = $null
     if (!$env:DB_URL.StartsWith('jdbc:postgresql://', [StringComparison]::Ordinal) -or
         $env:DB_URL -match '[\s;]' -or
@@ -46,6 +49,18 @@ try {
         !$databaseUri.Host -or $databaseUri.AbsolutePath -eq '/' -or $databaseUri.UserInfo) {
         throw 'DB_URL invalida: usa solo jdbc:postgresql://host:puerto/base, sin DB_URL= ni otras variables. Configura DB_USER y DB_PASSWORD por separado.'
     }
+    if ($env:DB_URL -cne 'jdbc:postgresql://localhost:5432/reminishub_test') {
+        throw 'Solo se permite la base de pruebas autorizada reminishub_test.'
+    }
+    foreach ($name in @('SPRING_DATASOURCE_URL', 'SPRING_DATASOURCE_USERNAME',
+            'SPRING_DATASOURCE_PASSWORD', 'SPRING_FLYWAY_URL', 'SPRING_FLYWAY_USER',
+            'SPRING_FLYWAY_PASSWORD', 'SPRING_APPLICATION_JSON', 'JAVA_TOOL_OPTIONS',
+            'JDK_JAVA_OPTIONS', 'MAVEN_OPTS')) {
+        if (![string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable($name, 'Process'))) {
+            throw "Retira la sustitucion $name antes de verificar la base de pruebas."
+        }
+    }
+    Write-Host 'Base: jdbc:postgresql://localhost:5432/reminishub_test; contrasena: [OCULTA]'
     if (!$MavenCommand) { $MavenCommand = Join-Path $modulePath 'mvnw.cmd' }
     $maven = (Get-Command $MavenCommand -ErrorAction Stop).Source
     $runId = [Guid]::NewGuid().ToString('N')
@@ -73,9 +88,17 @@ try {
     }
     if ($reports.Count -eq 0) { throw "Maven termino con codigo $mavenExitCode sin informes de esta ejecucion. Pruebas: NOT RUN; revisa el log local." }
     $expected = @{
-        'dev.reminishub.CatalogoIntegrationTests' = 7
+        'dev.reminishub.CatalogoIntegrationTests' = 11
         'dev.reminishub.EsquemaExistenteTests' = 2
         'dev.reminishub.ReminisHubApplicationTests' = 1
+        'dev.reminishub.RegistroServiceTests' = 5
+        'dev.reminishub.RegistroWebTests' = 12
+        'dev.reminishub.RegistroIntegrationTests' = 4
+        'dev.reminishub.TokenServiceTests' = 7
+        'dev.reminishub.AutenticacionWebTests' = 17
+        'dev.reminishub.service.IntentosLoginTests' = 1
+        'dev.reminishub.SesionE2ETests' = 3
+        'dev.reminishub.RegistroE2ETests' = 1
     }
     $seen = @{}
     $total = 0

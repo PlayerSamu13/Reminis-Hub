@@ -1,5 +1,5 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
-<head th:replace="~{fragments/layout :: head(#{error.title})}"></head>
+<head th:replace="~{fragments/layout :: head(#{error.title}, #{meta.error})}"></head>
 <body><main id="contenido" class="container error-page"><a class="brand" th:href="@{/}">ReminisHub</a><p class="eyebrow" th:text="${status}"></p><h1 th:text="#{error.title}">No podemos mostrar esta página</h1><p th:text="#{error.description}">El enlace no está disponible o la solicitud no es válida.</p><a class="btn btn-primary" th:href="@{/proyectos}" th:text="#{detail.back}"></a></main></body>
 </html>

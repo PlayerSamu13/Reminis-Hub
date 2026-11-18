@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
-<head th:replace="~{fragments/layout :: head(${proyecto.ficha.nombre})}"></head>
+<head th:replace="~{fragments/layout :: head(${proyecto.ficha.nombre}, ${proyecto.ficha.resumen})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main id="contenido" class="container detail-page">

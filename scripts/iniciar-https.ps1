@@ -3,7 +3,7 @@
 param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$required = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'DEV_USER_PASSWORD',
+$required = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'RH_JWT_SECRET',
     'RH_TLS_KEYSTORE', 'RH_TLS_PASSWORD')
 foreach ($name in $required) {
     if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name, 'Process'))) {

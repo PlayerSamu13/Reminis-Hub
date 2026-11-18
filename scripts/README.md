@@ -6,7 +6,7 @@ Desde la raiz, en PowerShell, con Java 25 y PostgreSQL iniciados:
 .\scripts\verificar.ps1 -Offline
 ```
 
-Configura previamente `DB_URL`, `DB_USER`, `DB_PASSWORD` y `DEV_USER_PASSWORD` en el proceso. Las variables de la configuracion de ejecucion de IntelliJ no se heredan automaticamente en su terminal. No pegues secretos en el chat ni los escribas en este repositorio. El script no importa configuraciones privadas del IDE.
+Configura previamente `DB_URL`, `DB_USER`, `DB_PASSWORD` y `RH_JWT_SECRET` en el proceso. `RH_JWT_SECRET` firma el JWT del login: al menos 32 bytes UTF-8 y nunca dentro de Git. Las variables de la configuracion de ejecucion de IntelliJ no se heredan automaticamente en su terminal. No pegues secretos en el chat ni los escribas en este repositorio. El script no importa configuraciones privadas del IDE.
 
 Para la base de pruebas de este proyecto, configura los dos valores no secretos por separado:
 
@@ -25,20 +25,20 @@ Se usa `reminis-hub/mvnw.cmd`. Si tienes otra instalacion compatible de Maven, p
 
 `-Offline` requiere dependencias ya descargadas. Omitelo si necesitas descargarlas. No desactives globalmente la politica de ejecucion de PowerShell: si impide ejecutar el script, informa del mensaje sin datos privados.
 
-El comando activa las dos suites opcionales, ejecuta Maven y lee solo los informes de esa ejecucion, identificados con un GUID (identificador unico). Exige las tres suites actuales con al menos 7, 2 y 1 pruebas, y rechaza cualquier fallo, error u omision en los informes generados. Los minimos deben revisarse al reorganizar las pruebas. No demuestra requisitos sin pruebas.
+El comando activa las suites PostgreSQL opcionales, ejecuta Maven y lee solo los informes de esa ejecucion, identificados con un GUID (identificador unico). Exige CatalogoIntegrationTests (11), EsquemaExistenteTests (2), ReminisHubApplicationTests (1), RegistroServiceTests (5), RegistroWebTests (12), RegistroIntegrationTests (4), TokenServiceTests (7), AutenticacionWebTests (17), IntentosLoginTests (1), SesionE2ETests (3) y RegistroE2ETests (1): al menos 64 pruebas, y rechaza cualquier fallo, error u omision en los informes generados. Los minimos deben revisarse al reorganizar las pruebas. No demuestra requisitos sin pruebas.
 
-El codigo de salida es 0 para PASS y 1 para FAIL. Aunque Maven falle, se resumen todas las suites con informes nuevos y se escribe `resumen.txt` junto al log; si no hay informes se indica NOT RUN, sin inventar contadores. Los valores anteriores de las banderas de entorno se restauran al terminar. Los logs quedan en `reminis-hub/target/verificacion/<identificador>/maven.log`; se ocultan los valores de las cuatro variables privadas antes de escribirlos. No compartas logs completos sin revisarlos: otras configuraciones futuras pueden contener datos sensibles.
+El codigo de salida es 0 para PASS y 1 para FAIL. Aunque Maven falle, se resumen todas las suites con informes nuevos y se escribe `resumen.txt` junto al log; si no hay informes se indica NOT RUN, sin inventar contadores. Los valores anteriores de las banderas de entorno se restauran al terminar. Los logs quedan en `reminis-hub/target/verificacion/<identificador>/maven.log`; se ocultan los valores de las cuatro variables privadas (DB_URL, DB_USER, DB_PASSWORD y RH_JWT_SECRET) antes de escribirlos. No compartas logs completos sin revisarlos: otras configuraciones futuras pueden contener datos sensibles.
 
-La suite conecta a la base configurada; usa exclusivamente una base de desarrollo/pruebas. El arranque de Spring ejecuta Flyway: si agregas migraciones pendientes, puede aplicarlas. Actualmente V1-V5 ya estan aplicadas. Los fixtures del catalogo se revierten, pero las secuencias pueden avanzar. No se ejecuta clean, repair ni borrado de bases.
+La suite conecta a la base configurada; solo admite jdbc:postgresql://localhost:5432/reminishub_test. El arranque de Spring ejecuta Flyway: si agregas migraciones pendientes, puede aplicarlas. Actualmente V1-V5 ya estan aplicadas. Los fixtures del catalogo se revierten, pero las secuencias pueden avanzar. No se ejecuta clean, repair ni borrado de bases.
 
 Los controles negativos del verificador se probaron con un comando Maven simulado en target (sin conectar a PostgreSQL): salida no cero, ausencia de informes nuevos, suite faltante y pruebas omitidas. Estos controles comprueban el script, no la aplicacion.
 
-Para repetir las siete regresiones del verificador, sin credenciales reales ni PostgreSQL:
+Para repetir las ocho regresiones del verificador, sin credenciales reales ni PostgreSQL:
 
 ```powershell
 .\scripts\probar-verificador.ps1
 ```
 
-Incluyen URL invalida, error de Maven, informes ausentes, suite ausente, pruebas omitidas, diez errores con diagnostico y ejecucion correcta. Los archivos sinteticos quedan en target, excluidos de Git; llevan identificadores distintos y no se confunden con una ejecucion real. Las variables de conexion previas se restauran al terminar.
+Incluyen URL invalida, secreto JWT demasiado corto, error de Maven, informes ausentes, suite ausente, pruebas omitidas, errores con diagnostico y ejecucion correcta. Los archivos sinteticos quedan en target, excluidos de Git; llevan identificadores distintos y no se confunden con una ejecucion real. Las variables de conexion previas se restauran al terminar.
 
 Referencia: [opciones oficiales de Surefire](https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html), propiedad `surefire.reportNameSuffix`.

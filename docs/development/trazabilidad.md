@@ -1,35 +1,109 @@
 # ReminisHub — trazabilidad
 
-## Estado actual — 17/11/2026
+## Estado actual — 18/11/2026
 
-- HTTPS cerrado tras defensa corregida; registro local aprobado, en implementacion.
-- Rama: codex/https-local; cierre de estabilizacion: 92f6524.
+- HTTPS cerrado tras defensa corregida; registro local aprobado y cerrado (ficha etapa-02b); autenticación local E3A APROBADA por delegación del estudiante.
+- Rama: codex/registro-cierre (registro y autenticacion aun sin commit).
 - Stack confirmado nuevamente: Thymeleaf y PostgreSQL.
 - Base autorizada de pruebas: jdbc:postgresql://localhost:5432/reminishub_test.
 - reminishub_dev es produccion segun el estudiante; excluirla de pruebas.
 - Arranque: Maven Wrapper spring-boot:run con variables locales configuradas.
-- Pruebas: scripts/verificar.ps1 -Offline desde la raiz.
+- Pruebas: scripts/verificar.ps1 -Offline desde la raiz; ahora exige RH_JWT_SECRET (>=32 bytes) en lugar de DEV_USER_PASSWORD.
 - D1–D7 resueltas conforme a la seccion siguiente.
 - HTTPS: verificacion automatica PASS; navegador confirmado por el estudiante.
 - Ejercicio de estado vacio EN revisado; regresion PostgreSQL PASS, 14 pruebas.
 - Estabilizacion: defensa revisada; teclado/Swagger confirmados por el estudiante.
-- E2 y requisitos de escritura/reporte siguen pendientes.
+- Registro: suite completa 12 web + 5 servicio PASS; revision visual y ficha cerradas.
+- Login/JWT: Suite previa de 60 PASS (644eaccd25f3465483187723480a57bb). Nueva revisión de vigencia: 40 pruebas sin DB PASS. Revisión posterior: 42 pruebas sin DB PASS, 64/64 con PostgreSQL y V6 PASS. Sufijo f2096d038ae849b59b982f51e8175c17, once XML y 64 casos individuales verificados.
+- Preparacion de defensa escrita por decision del estudiante: docs/defensa/guia-sustentacion.md; sin exigir respuestas por etapa.
+- Navegador: 16 combinaciones de vistas/idioma/ancho revisadas; accesibilidad del formulario limpio corregida.
+
+### Revocación y límite de intentos — 18/11/2026
+
+Implementados jti por sesión, tabla V6 de revocaciones, rechazo de cookies anteriores sin jti, respuesta 429 traducida y ventana por correo de una instancia. PASS de Maven en cinco suites sin PostgreSQL (42 casos) y ocho regresiones simuladas del verificador. E2E actualizado para dos sesiones, con rechazo de la cerrada y continuidad de la otra. BLOCKED la ejecución completa actual de 64 pruebas. PostgreSQL requiere contraseña y este proceso carece de las variables de conexión. Los informes sintéticos del verificador no acreditan la integración. Pendientes validación de V6 y aprobación antes de Google.
+
+### Vigencia de cuentas — 18/11/2026
+
+La siguiente petición con JWT válido consulta el usuario por correo y exige cuenta activa y rol coincidente. Una cuenta ausente tampoco obtiene identidad. Si se restaura el estado original, una copia aún vigente puede volver a funcionar. La duración admitida es de 1 a 60 minutos. La consulta adicional tiene un coste por petición. Pendientes la revocación al salir y los límites de intentos. Maven ejecutó 40 pruebas sin PostgreSQL con cero fallos, errores u omisiones. La ejecución PostgreSQL de 60 corresponde a la versión anterior.
+
+### Revision y refinamiento — 18/11/2026
+
+- Autorizacion actual: revisar la etapa creada ayer, refinar interfaz/legibilidad y elaborar una guia para estudiar al finalizar. No se exige contestar una defensa por etapa; no implica aprobacion automatica de funcionalidades pendientes.
+- [Verificado: Surefire] sufijo `effa2ed51b7b40d8b1f4c36b5dc2a1ee`: diez suites, 58 pruebas, cero fallos, errores u omisiones; incluye RegistroE2ETests (1) y SesionE2ETests (3). Corrige los NOT RUN historicos mas abajo para esa version, no para cambios posteriores.
+- Hallazgo MEDIO corregido: GET /api/v1/sesion con Accept text/html devolvia 302. Prueba nueva reproducida FAIL (esperado 401, obtenido 302); se prioriza el matcher /api/** y ahora pasa. No es una escalada de privilegios, sino un contrato HTTP incorrecto.
+- Login: error asociado a ambos campos, estilo invalid y foco unico en correo; prueba nueva verifica descripcion/foco y ausencia de la clave. Formularios: campos 44 px, texto 16 px y etiquetas 14 px; cabecera adaptable y nombres largos acotados. Sin dependencia ni capa nueva.
+- Pruebas E2E: limpieza antes por prefijo (podia afectar otra ejecucion); ahora borra solo el correo UUID de la prueba actual. Compilacion PASS; ejecucion PostgreSQL de esta correccion NOT RUN porque DB_* no estan configuradas en esta terminal. No se borraron cuentas durante la revision.
+- Verificador: ahora exige RegistroE2ETests, antes omitida de los minimos, y 15 pruebas de autenticacion web. Minimo total: 60. Ocho regresiones simuladas PASS.
+- PASS actual: `mvnw.cmd -o -Dtest=TokenServiceTests,AutenticacionWebTests,RegistroWebTests,RegistroServiceTests test`: 38 pruebas, cero fallos/errores/omisiones; Surefire confirmado. `mvnw.cmd -o -DskipTests test-compile`: PASS tras modificar la limpieza E2E.
+- PASS navegador: catalogo, detalle /proyectos/8, login y registro; ES/EN a 1366/390 px (16 casos), sin desbordamiento ni referencias aria-describedby ausentes. Axe: cero infracciones detectadas y una comprobacion manual por caso. Capturas de login movil y registro escritorio inspeccionadas. Evidencia local: `reminis-hub/target/refinamiento/informe.json`. No demuestra todos los estados ni conformidad WCAG completa.
+- Limites abiertos: token copiado valido tras logout; rol/activo del JWT no se reconsultan tras cambios en DB; sin limitacion de intentos; duracion JWT configurable sin validacion de rango. Resolver antes de operaciones administrativas o exposicion publica. No se introduce revocacion ni nuevas tablas sin definir ese contrato.
+- Guia nueva: arquitectura, recorridos, decisiones, diferencias entre firma/hash/TLS, preguntas con respuestas y guion de demostracion. Corregidos JavaDoc que confundian emisor/audiencia y HttpOnly/Secure.
+- Git: se conserva codex/registro-cierre y el trabajo previo; no se realiza commit de etapa no aceptada. El plazo sigue en riesgo: al 18/11 faltan Google, propuestas/moderacion, auditoria y reporte, ademas de usabilidad real; no se promete terminarlo todo antes del congelamiento del 20/11.
 
 Defensa HTTPS completada: el estudiante distingue acceso JavaScript a cookie Secure sin HttpOnly y cifrado sin verificacion de identidad con curl -k. Se acepto continuar al registro. Ficha etapa-02a.md. Consulta publica sigue abierta; solo las acciones de colaboracion requieren cuenta. RF-05 incluye registro local y login, RF-06 Google, ambos obligatorios segun la matriz acordada.
 
-Actualizacion HTTPS: [Declarado por el estudiante] confianza del navegador validada. [Verificado: keytool -printcert sobre localhost.crt] SAN localhost/127.0.0.1, RSA 3072, SHA256withRSA, uso serverAuth, CA=false; vigencia del 16/11/2026 14:59:51 al 16/12/2026 14:59:51 America/Bogota. La fecha de entrega 23/11 queda dentro de vigencia. Defensa pendiente de respuestas, como solicito el estudiante al indicar que investigaria; no se presume aprendizaje por inspeccionar el certificado.
+Actualizacion HTTPS: [Declarado por el estudiante] confianza del navegador validada. [Verificado: keytool -printcert sobre localhost.crt] SAN localhost/127.0.0.1, RSA 3072, SHA256withRSA, uso serverAuth, CA=false; vigencia del 16/11/2026 14:59:51 al 16/12/2026 14:59:51 America/Bogota. La fecha de entrega 23/11 queda dentro de vigencia. Defensa completada y corregida, documentada en etapa-02a.md.
 
-### Siguiente plan propuesto: registro local, 3–4 h
+### Registro local: plan aprobado, implementacion en revision, 3–4 h del estudiante
 
 Objetivo RF-05 parcial y criterios 1/2/4: GET/POST /registro, formulario ES/EN y persistencia de colaborador con BCrypt. La tabla usuario exige correo normalizado y unico, nombre valido, rol y activo. Aprovechar constraints existentes; sin migracion prevista. No incluir login/JWT en este hito.
 
 Archivos previstos: UsuarioRepository, RegistroService, formulario de registro mutable para binding, controlador web, plantilla registro.html, bundles, SecurityConfig y pruebas unitarias/integracion. Error de correo duplicado comprensible, sin trazas; normalizar antes de guardar y tratar tambien la carrera de unicidad. Rol COLABORADOR y activo fijados por servidor; formulario limitado a nombre, correo y contrasena. No devolver ni repoblar contrasena/hash. CSRF activo y ejecucion del formulario sobre HTTPS.
 
-Aceptacion: registro valido y hash comprobado mediante PasswordEncoder.matches; rechazo de campos invalidos, correo duplicado normalizado y manipulacion de rol; CSRF sin token 403; regresion de catalogo y errores ES/EN. PostgreSQL exclusivamente reminishub_test, fixtures reversibles. Comprobar documentacion oficial de la version real antes de incorporar APIs. Tu turno reservado: prueba de rechazo de rol ADMIN enviado por cliente. Miniclase: binding, validacion, hash y transaccion. Defensa creciente: carrera de dos registros iguales, limite entre DTO y autorizacion, diferencia entre TLS y hash. Aprobacion especifica del plan de registro pendiente.
+Aceptacion: registro valido y hash comprobado mediante PasswordEncoder.matches; rechazo de campos invalidos, correo duplicado normalizado y manipulacion de rol; CSRF sin token 403; regresion de catalogo y errores ES/EN. PostgreSQL exclusivamente reminishub_test, fixtures reversibles. Tu turno reservado: prueba de rol ADMIN enviado por cliente; debe persistir COLABORADOR. Miniclase: binding, validacion, hash y transaccion. Defensa creciente: carrera de dos registros iguales, limite entre DTO y autorizacion, diferencia entre TLS y hash. Plan aprobado expresamente; etapa aun no cerrada.
+
+#### Evidencia de registro — 17/11/2026
+
+- [Verificado: codigo] GET/POST /registro, formulario mutable con campos permitidos, rol COLABORADOR/activo fijados en servicio, BCrypt coste 12, validacion y correo normalizado. Contrasena minimo 15 unidades UTF-16, maximo 72 bytes UTF-8; nunca se repuebla en HTML. Sin migraciones ni dependencias nuevas. Login/JWT/Google pendientes.
+- PASS: `mvnw.cmd -o -Dtest=RegistroServiceTests,RegistroWebTests test`, codigo 0. Surefire: 5 servicio + 6 web; cero fallos, errores u omisiones. Finalizado 19:43:11 -05:00. Prueba HTTPS usa esquema https real en MockMvc; idioma del POST viene de cookie seleccionada mediante GET.
+- PASS: `scripts/probar-verificador.ps1`, siete casos simulados, sin PostgreSQL. El verificador exige ahora seis suites, minimo 29 pruebas, y solo acepta la URL autorizada. Esto no demuestra funcionamiento de la DB.
+- PASS: ejecucion del estudiante con `scripts/verificar.ps1 -Offline`; informes Surefire sufijo 4445fe5d1e95455da41c2c39f1d66bbe inspeccionados: 29 pruebas, cero fallos, errores u omisiones, seis suites. RegistroIntegrationTests aporta cuatro pruebas. La prueba validacionRolBaseDatos envia rol=ADMIN y comprueba COLABORADOR mediante SQL; ejercicio correcto. La prueba de duplicado simula consulta previa desactualizada con INSERT/constraint reales, no concurrencia entre hilos.
+- BLOCKED: recorrido real y auditoria visual de registro; curl a localhost:8443 no encontro servidor. No se declara conformidad WCAG ni PASS de extremo a extremo.
+- Pendientes: navegador ES/EN/errores/teclado, auditoria de accesibilidad, defensa y APROBADA. Cambios en codex/registro-local sin commit de etapa; conservar .env.example preexistente.
+
+Actualizacion autorizada de botones (17/11): acceso Crear cuenta en catalogo con btn btn-primary; Explorar proyectos en formulario con btn btn-outline-secondary y, tras exito, btn btn-primary. Acciones agrupadas con flex-wrap/gap para adaptar la distribucion. Se conservan enlaces de navegacion, submit, traducciones y estilos compartidos; sin dependencias nuevas. Preferencia visual vigente: minimalismo moderno inspirado en GitHub. PASS: RegistroWebTests, seis pruebas sin fallos, errores u omisiones; Surefire y Maven codigo 0, 20:53:52 -05:00. PASS git diff --check. Revision visual real BLOCKED: localhost:8443 rechaza conexion. Esta ejecucion no repite las 29 pruebas PostgreSQL anteriores.
+
+Revision de cierre solicitada (defensa aplazada por autorizacion expresa): nucleo funcional respaldado por las pruebas existentes; no declarar registro completamente terminado. Hallazgo BAJO verificado: registro.html referencia IDs de errores mediante aria-describedby, pero SpringErrorsTagProcessor de Thymeleaf 3.1.5.RELEASE elimina los elementos th:errors cuando no hay errores (fuente local del JAR inspeccionada). Propuesta: conservar contenedores de descripcion o emitir referencias condicionales. Cobertura pendiente: seguir POST exitoso hasta GET de confirmacion y recarga; las pruebas actuales solo verifican redireccion y flash. Limite transaccional: las pruebas PostgreSQL consultan dentro de transacciones de prueba revertidas, no verifican durabilidad mediante una nueva transaccion tras commit de la peticion. Recorrido navegador, cookies efectivas y auditoria visual/accesible BLOCKED por servidor 8443 inaccesible. Los resultados 29/29 y 6/6 se releyeron de Surefire; no son nuevas ejecuciones en esta revision. No se modifico codigo funcional ni se aprobo la etapa.
 
 ## Orden de entrega revisado — 16/11/2026
 
+Actualizacion posterior de revision real: curl fuera del sandbox devuelve HTTP 200 en https://localhost:8443/registro con validacion TLS activa; dentro del sandbox rechaza conexion. Los rechazos previos no prueban que el servidor del estudiante estuviera detenido. Edge headless sin aceptar certificados invalidos: ES/EN a 1366 y 390 px emulados, sin desbordamiento horizontal; botones de 43 px, estilos principal/secundario aplicados. Tab alcanza campos y acciones con contorno visible de 3 px. Navegacion catalogo -> registro -> catalogo PASS. Axe (tags WCAG A/AA seleccionados): cero infracciones detectadas y dos revisiones manuales por vista; no equivale a conformidad completa. Inspeccion DOM confirma cuatro referencias aria-describedby sin destino en formulario limpio. Evidencia local ignorada por Git: reminis-hub/target/revision-registro/informe.json y capturas. No se enviaron formularios ni se crearon cuentas; confirmacion, cookies y persistencia tras commit siguen fuera de esta comprobacion. Defensa aplazada.
+
+### Cierre de accesibilidad, pruebas y documentacion del registro — 17/11/2026
+
+- [Verificado: codigo] `registro.html` emite `aria-describedby` solo cuando el mensaje existe y aplica `is-invalid`/`invalid-feedback` de Bootstrap; `layout.html` publica `meta description` localizada por vista; `README.md` documenta el arranque HTTPS y advierte que `spring-boot:run` sin perfil deja `/registro` inaccesible. Rama `codex/registro-cierre`.
+- PASS: `RegistroWebTests` 8/8 y `RegistroServiceTests` 5/5 con `mvnw.cmd -o -Dtest=RegistroWebTests,RegistroServiceTests test` (Surefire 22:34, cero fallos, errores u omisiones). Las dos pruebas nuevas afirman que el formulario limpio no referencia errores inexistentes y que el invalido marca el campo y solo referencia mensajes presentes.
+- PASS: comprobacion HTTP en `https://localhost:8443`; formulario limpio con `aria-describedby="clave-ayuda"` y sin referencias colgantes; tras 400 los tres campos quedan con `is-invalid`, borde `rgb(220,53,69)` y referencias existentes. Lighthouse: accesibilidad 1, buenas practicas 1 y SEO 1 en `/proyectos` y `/registro` (antes 0.75 por falta de `meta description`).
+- PASS: paridad de bundles 87/87 y `git diff --check`.
+- NOT RUN: `RegistroE2ETests`, que exige `CATALOGO_DB_TESTS=true` y PostgreSQL real. Limpia sus cuentas `e2e-registro-%@example.invalid` en `@AfterEach` y comprueba 302, flash de un solo uso y fila persistida tras el commit.
+- Nota de entorno: este shell tenia `JAVA_HOME` apuntando a un JRE 17 y Maven fallaba con "No compiler is provided"; la ejecucion uso un JDK 25 solo para ese comando. Corregir `JAVA_HOME` de forma permanente evita repetir el fallo.
+- Pendiente: `APROBADA`, ficha de defensa y commit. El registro sigue sin login/JWT.
+
+#### Revision del ejercicio y aprobacion — 17/11/2026
+
+- [Verificado: codigo] El estudiante implemento el foco al primer campo invalido con `th:autofocus` condicional y sin JavaScript. Prioridad correcta: nombre, luego correo, luego contrasena; nunca mas de un campo recibe el foco.
+- Hallazgo corregido: `th:autofocus` de la contrasena solo miraba `hasErrors('contrasena')`, asi que un error exclusivo de bytes (mas de 72 bytes UTF-8) dejaba la pagina sin foco. Se agrego `hasErrors('contrasenaCompatible')` a la condicion.
+- PASS: `RegistroWebTests` 12/12 y `RegistroServiceTests` 5/5; 17 pruebas, cero fallos, errores u omisiones (`mvnw.cmd -o -Dtest=RegistroWebTests,RegistroServiceTests test`, codigo 0). Cuatro pruebas nuevas fijan el comportamiento del foco: cero en formulario limpio, uno y en el campo correcto para nombre, correo, clave corta, solo bytes y los tres errores.
+- PASS navegador real (Chromium, https://localhost:8443): con error de bytes el foco queda en `contrasena` y `aria-describedby` resuelve `clave-ayuda` y `clave-bytes-error`; con tres errores el foco queda en `nombre` y hay un solo `autofocus`; en formulario limpio no hay `autofocus` y el foco permanece en `BODY`. Lighthouse `/registro`: accesibilidad 1, buenas practicas 1, SEO 1, sin fallos.
+- Nota metodologica: la primera comprobacion en vivo dio falso negativo porque `target/classes` conservaba la plantilla anterior; `spring-boot:run` sirve esa copia, no `src/main/resources`. Tras `process-resources` la comprobacion coincidio con las pruebas. Verificar siempre sobre la copia compilada.
+- APROBADA por el estudiante con comprension aplazada. Ficha `docs/defensa/etapa-02b.md`. Sin commit: los cambios siguen compartidos entre ramas.
+
 Stack confirmado: Thymeleaf y PostgreSQL. La estabilizacion quedo cerrada con 14 pruebas verificadas y recorrido de teclado/Swagger declarado por el estudiante. Commit 92f6524. El cambio previo de .env.example sigue local, fuera de ese commit.
+
+### Autenticacion local E3A: login, JWT y logout - 17/11/2026
+
+- [Verificado: codigo] `JwtConfig` firma HS256 con Nimbus (ya presente por el starter OAuth2: sin dependencia nueva) y valida firma, emisor `reminishub` y expiracion. El claim `rol` solo concede autoridad si coincide con `RolUsuario`; un rol inventado queda sin permisos. El secreto entra por `RH_JWT_SECRET` y el arranque falla si mide menos de 32 bytes.
+- [Verificado: codigo] Cookie `RH_TOKEN`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, 60 min (`RH_JWT_MINUTOS`). No se guarda en `localStorage` ni se expone a JavaScript. `spring.security.user.*` eliminado: ya no existe usuario provisional en memoria.
+- [Verificado: codigo] `POST /login` valida con `DaoAuthenticationProvider` + BCrypt y emite el JWT; un correo inexistente, una clave incorrecta y una cuenta inactiva devuelven el mismo 401 traducido, sin repoblar la contrasena. `POST /logout` con CSRF borra la cookie. `GET /api/v1/sesion` responde 401 sin token y los datos del token con el.
+- Hallazgo grave corregido: `oauth2ResourceServer` exime de CSRF toda peticion con bearer token porque supone que viaja en cabecera. Con el token en cookie, cualquier POST autenticado quedaba sin proteccion. Evidencia en traza: `Did not protect against CSRF since request did not match ... Not [OAuth2ResourceServerConfigurer$BearerTokenRequestMatcher]`. Se sustituyo por un filtro propio colocado despues de `CsrfFilter`, de modo que el CSRF se valida antes de leer el JWT.
+- Segundo hallazgo: el filtro estandar de logout interceptaba `POST /logout` y redirigia a `/login?logout`. Se desactivo y el cierre lo hace `LoginController`.
+- PASS: `mvnw.cmd -o -Dtest=TokenServiceTests,AutenticacionWebTests,RegistroWebTests,RegistroServiceTests test`, 36 pruebas (6 token, 13 web de acceso, 12 registro web, 5 servicio), cero fallos, errores u omisiones, codigo 0. Incluye token con otra clave, token expirado, rol inventado, atributos de cookie, 401 de API, token alterado, logout sin CSRF (403 y la cookie sigue sirviendo), flujo real de CSRF con sesion tomando el valor impreso en el HTML, y cuenta inactiva.
+- PASS: paridad de bundles 100/100 y `git diff --check`. PASS: `scripts/probar-verificador.ps1`, 8/8 (incluye el nuevo caso de secreto corto y el enmascarado de `RH_JWT_SECRET`).
+- NOT RUN: `SesionE2ETests` (3), `RegistroE2ETests` (1) e integraciones PostgreSQL: la sesion no tiene `DB_URL`, `DB_USER`, `DB_PASSWORD` ni `CATALOGO_DB_TESTS`. NOT RUN: navegador real y Lighthouse de `/login`; el servidor no escucha en 8443.
+- Limitacion declarada: sin estado en el servidor, el logout borra la cookie pero no revoca un token ya copiado; caduca a los 60 minutos. Queda medida por `SesionE2ETests.elTokenCopiadoAntesDelLogoutSigueValidoHastaExpirar` para decidir despues lista de revocacion o token opaco.
+- Limitacion declarada: no hay limite de intentos ni bloqueo temporal por cuenta; un atacante puede probar contrasenas en serie. BCrypt coste 12 encarece cada intento, pero no sustituye una politica de intentos. Pendiente de decision antes de aceptar el hito.
+- Corregido de la auditoria anterior: `HEAD` sobre rutas publicas ya no responde 401 (se declaro junto a `GET`); sigue pendiente comprobar cabeceras CSP, Referrer-Policy y Permissions-Policy.
+- Tu turno reservado (sin implementar): `Cache-Control: no-store` en la respuesta de `/login` y su prueba. Pendiente: revision en navegador, E2E con PostgreSQL real, `APROBADA`, ficha y commit.
 
 | Orden | Resultado y dependencias | Dedicacion estimada del estudiante con asistencia |
 |---|---|---|
@@ -76,16 +150,18 @@ E1B aceptada expresamente el 14/11/2026. Criterios de rúbrica: 1 frontend; 2 ba
 | ID | Estado | Evidencia o pendiente | Rúbrica |
 |---|---|---|---|
 | RF-01, RF-02, RF-03, RF-04 | APROBADO | E1B aceptada el 14/11: catálogo, filtros combinables, paginación, detalle y búsqueda AJAX. Mejoras M4/M5 pendientes, sin ocultar sus límites. | 1, 2, 3 |
-| RF-05, RF-06 | PENDIENTE | Dependencias presentes, sin autenticación propia. | 4 |
+| RF-05 | EN VERIFICACIÓN | Registro aceptado; login/JWT/logout implementados, E2E anterior PASS; limites de seguridad y verificacion actual pendientes. | 4 |
+| RF-06 | PENDIENTE | Dependencias presentes; Google OIDC no implementado. | 4 |
 | RF-07, RF-08 | EN DESARROLLO | Entidades y V2; falta flujo de presentación y moderación. | 1, 2, 4 |
 | RF-09 | EN DESARROLLO | Tabla/entidad de bitácora; sin triggers. | 3, 4 |
 | RF-10 | PENDIENTE | Sin reporte JDBC ni CSV. | 3, 5 |
 | RF-11, RF-12 | PENDIENTE | Sin mis propuestas ni reenvío; Should/Could respectivamente. | 1, 2 |
 | RF-13 | PENDIENTE | Sin CRUD funcional documentado. | 2 |
 | NF-01 | EN VERIFICACIÓN | E1B: bundles ES/EN, cookie de idioma y enlaces que conservan filtros; pruebas de vistas y fragmentos. | 5 |
-| NF-02, NF-03, NF-04 | PENDIENTE | Sin evidencia de JWT/cookies, HTTPS, permisos de negocio u OWASP. | 4 |
+| NF-02, NF-03 | EN VERIFICACIÓN | HTTPS/BCrypt/CSRF y JWT en cookie implementados; 401 API corregido. Permisos de negocio de modulos futuros y limites del token pendientes. | 4 |
+| NF-04 | PENDIENTE | Falta auditoria OWASP completa documentada sobre los flujos finales. | 4 |
 | NF-05 | EN DESARROLLO | JavaDoc de ping, DTO y contratos del catálogo; generación y cobertura completa pendientes. | 2 |
-| NF-06 | EN DESARROLLO | 10 pruebas: 7 catálogo, 2 esquema y 1 contexto; faltan pruebas de los flujos aún no implementados. | 2, 3 |
+| NF-06 | EN DESARROLLO | 58 pruebas previas y 38 sin DB actuales verificadas; suite completa actual esperada 60, pendiente de ejecutar. Faltan pruebas de modulos futuros. | 2, 3 |
 | NF-07 | EN DESARROLLO | E1B: etiquetas, foco, teclado y auditorías Lighthouse/axe verificadas; deberá revisarse cada nueva vista. No implica conformidad global. | 5 |
 | NF-08, NF-09 | PENDIENTE | Faltan estudio real y documentación académica. | 5, Todos |
 

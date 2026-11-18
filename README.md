@@ -1,12 +1,12 @@
 # ReminisHub
 
-Repositorio académico de proyectos. El catálogo público permite buscar, filtrar, paginar y consultar detalles en español e inglés. Autenticación propia, CRUD privado, moderación, auditoría y reportes siguen pendientes.
+Repositorio académico de proyectos. El catálogo público permite buscar, filtrar, paginar y consultar detalles en español e inglés; el registro local crea cuentas de colaborador con BCrypt sobre HTTPS y el login emite un JWT propio en cookie HttpOnly. Google, CRUD privado, moderación, auditoría y reportes siguen pendientes.
 
 ## Entorno local
 
 Se requiere JDK 25, PostgreSQL 18 y las dependencias Maven disponibles. El proyecto utiliza Spring Boot 4.1.2, Thymeleaf, Bootstrap y jQuery locales.
 
-Configura JAVA_HOME con tu JDK y agrega su carpeta bin al PATH del proceso. Configura DB_URL, DB_USER, DB_PASSWORD y DEV_USER_PASSWORD en la terminal o en la ejecución de IntelliJ. DEV_USER_PASSWORD corresponde al usuario provisional de desarrollo. Guarda las contraseñas fuera de Git.
+Configura JAVA_HOME con tu JDK y agrega su carpeta bin al PATH del proceso. Configura DB_URL, DB_USER, DB_PASSWORD y RH_JWT_SECRET en la terminal o en la ejecución de IntelliJ. RH_JWT_SECRET firma el JWT propio: al menos 32 bytes UTF-8, distinta en cada entorno y fuera de Git. La app no arranca sin ella. Guarda las contraseñas fuera de Git.
 
 La plantilla reminis-hub/.env.example documenta variables. Copiarla a .env no hace que Spring las cargue automáticamente. La terminal no hereda necesariamente la configuración de ejecución de IntelliJ.
 
@@ -14,15 +14,16 @@ Para las pruebas autorizadas utiliza jdbc:postgresql://localhost:5432/reminishub
 
 ## Arranque y verificación
 
-Desde la raíz, con variables configuradas para la base de pruebas autorizada:
+El registro local exige HTTPS, así que el arranque de referencia es:
 
 ```powershell
-Set-Location .\reminis-hub
-.\mvnw.cmd spring-boot:run
+.\scripts\iniciar-https.ps1
 ```
 
-Abre http://localhost:8080/proyectos. La documentación está en /swagger-ui/index.html y /v3/api-docs. El arranque ejecuta Flyway y puede aplicar migraciones pendientes; verifica previamente la base seleccionada.
+El script activa el perfil `https` y exige `DB_URL`, `DB_USER`, `DB_PASSWORD`, `RH_JWT_SECRET`, `RH_TLS_KEYSTORE` y `RH_TLS_PASSWORD`; también rechaza cualquier base distinta de `jdbc:postgresql://localhost:5432/reminishub_test`. Abre https://localhost:8443/proyectos. La documentación está en /swagger-ui/index.html y /v3/api-docs, y el procedimiento del certificado en [https-local](docs/development/https-local.md).
 
-Para ejecutar pruebas desde la raíz sigue [scripts/README.md](scripts/README.md). El comando es `./scripts/verificar.ps1 -Offline` cuando las dependencias ya están descargadas. Activa las suites PostgreSQL y resume errores y omisiones. Las pruebas deben usar exclusivamente la base autorizada.
+`GET /registro` redirige a `https://localhost:8443/registro`. Si arrancas con `.\mvnw.cmd spring-boot:run` sin perfil, el catálogo responde en http://localhost:8080/proyectos pero el formulario de registro queda inaccesible porque el puerto 8443 no escucha; no uses ese arranque para demostrar el registro. El arranque ejecuta Flyway y puede aplicar migraciones pendientes; verifica previamente la base seleccionada.
+
+Para ejecutar pruebas desde la raíz sigue [scripts/README.md](scripts/README.md). El comando es `./scripts/verificar.ps1 -Offline` cuando las dependencias ya están descargadas. Con `CATALOGO_DB_TESTS=true` se activan las suites PostgreSQL, incluida la verificación de extremo a extremo del registro. Las pruebas deben usar exclusivamente la base autorizada.
 
 Consulta el estado y las limitaciones en [trazabilidad](docs/development/trazabilidad.md) y las comprobaciones de interfaz en [evidencias](docs/evidencias/README.md).

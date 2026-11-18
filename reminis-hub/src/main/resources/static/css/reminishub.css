@@ -9,3 +9,20 @@ body{margin:0;background:var(--paper);font-size:15px;line-height:1.65}a{color:va
 @media(max-width:991px){.hero-inner{gap:35px;grid-template-columns:1fr 220px}.catalog-layout{grid-template-columns:205px minmax(0,1fr);gap:22px}.project-grid{grid-template-columns:1fr}.catalog-label{display:none}.detail-layout{gap:28px;grid-template-columns:minmax(0,1fr) 260px}}
 @media(max-width:640px){.container{padding-left:20px;padding-right:20px}.site-nav{min-height:78px;gap:12px}.brand{font-size:20px;gap:9px}.brand-mark{width:35px;height:38px;font-size:30px}.brand small{font-size:8px}.nav-links{gap:10px}.nav-catalog{display:none}.hero-inner{grid-template-columns:1fr;padding-top:35px;padding-bottom:32px}.hero-note{display:none}.hero-description{font-size:14px}.hero h1{letter-spacing:-1.2px}.catalog-layout{display:flex;flex-direction:column;padding-top:24px;gap:27px}.filter-panel{padding:18px;width:100%}.filter-heading{margin-bottom:17px}.filter-help{display:none}.form-select{margin-bottom:16px}.filter-submit{min-height:40px}.reset-link{margin-top:12px}.catalog-heading h2{font-size:22px}.search-bar .btn{min-width:70px}.project-grid{grid-template-columns:1fr}.project-card{padding:22px}.project-summary{font-size:13px}.footer-inner{align-items:start;flex-direction:column;gap:12px}.footer-academic{text-align:left;max-width:none}.detail-layout{grid-template-columns:1fr;gap:30px}.detail-summary{font-size:16px}.fiction-notice{flex-direction:column;gap:4px}.detail-page h1{font-size:32px}.pagination-bar{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.nav-sesion{display:flex;align-items:center;gap:14px}.nav-sesion .nav-usuario{font-size:14px;color:var(--muted);font-weight:600}.nav-sesion a,.nav-sesion button{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-decoration:none}.nav-sesion a:hover,.nav-sesion button:hover{color:var(--blue);text-decoration:underline}
+@media(max-width:640px){.nav-sesion .nav-usuario{display:none}}
+
+/* Formularios de cuenta: tipografia legible y controles consistentes, sin otra capa de componentes. */
+.auth-page h1 { font-size: clamp(28px, 3vw, 36px); letter-spacing: -1px; }
+.auth-page .form-label { font-size: 14px; }
+.auth-page .form-control { min-height: 44px; font-size: 16px; border-color: #8c99a8; }
+.auth-page .form-control.is-invalid { border-color: #dc3545; }
+.auth-page .form-text, .auth-page .invalid-feedback { font-size: 13px; }
+.nav-sesion { min-width: 0; }
+.nav-sesion form { margin: 0; }
+.nav-sesion .nav-usuario { max-width: 220px; overflow-wrap: anywhere; }
+.nav-sesion a, .nav-sesion button { min-height: 44px; display: inline-flex; align-items: center; }
+@media (max-width: 640px) {
+    .site-nav { flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
+    .nav-links { flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
+}

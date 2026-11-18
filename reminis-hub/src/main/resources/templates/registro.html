@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{registro.titulo}, #{meta.registro})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5 auth-page">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <h1 th:text="#{registro.titulo}">Crear cuenta</h1>
+            <div th:if="${registroCreado == true}" class="alert alert-success mt-4" role="status">
+                <p th:text="#{registro.creado}">Tu cuenta de colaborador se ha creado.</p>
+                <a class="btn btn-primary" th:href="@{/proyectos}" th:text="#{registro.volver}">Explorar proyectos</a>
+            </div>
+            <form th:unless="${registroCreado == true}" th:action="@{/registro}" th:object="${registro}" method="post" class="mt-4">
+                <p th:text="#{registro.introduccion}">Crea una cuenta para colaborar.</p>
+                <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger" role="alert" th:text="#{registro.revisar}">Revisa los campos indicados.</div>
+                <div class="mb-3">
+                    <label for="nombre" class="form-label" th:text="#{registro.nombre}">Nombre</label>
+                    <input id="nombre" type="text" th:field="*{nombre}" class="form-control" required minlength="2" maxlength="120" autocomplete="name"
+                           th:classappend="${#fields.hasErrors('nombre') ? 'is-invalid' : null}"
+                           th:autofocus="${#fields.hasErrors('nombre')}"
+                           th:attr="aria-invalid=${#fields.hasErrors('nombre')},
+                                    aria-describedby=${#fields.hasErrors('nombre') ? 'nombre-error' : null}">
+                    <p id="nombre-error" class="invalid-feedback" th:errors="*{nombre}"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label" th:text="#{registro.correo}">Correo electrónico</label>
+                    <input id="email" type="email" th:field="*{email}" class="form-control" required maxlength="254" autocomplete="email"
+                           th:classappend="${#fields.hasErrors('email') ? 'is-invalid' : null}"
+                           th:autofocus="${#fields.hasErrors('email') and !#fields.hasErrors('nombre')}"
+                           th:attr="aria-invalid=${#fields.hasErrors('email')},
+                                    aria-describedby=${#fields.hasErrors('email') ? 'email-error' : null}">
+                    <p id="email-error" class="invalid-feedback" th:errors="*{email}"></p>
+                </div>
+                <div class="mb-4">
+                    <label for="contrasena" class="form-label" th:text="#{registro.clave}">Contraseña</label>
+                    <!-- Sin th:field ni value: nunca repoblar el secreto en la respuesta. -->
+                    <input id="contrasena" name="contrasena" type="password" class="form-control" required minlength="15" maxlength="72" autocomplete="new-password"
+                           th:classappend="${#fields.hasErrors('contrasena') or #fields.hasErrors('contrasenaCompatible') ? 'is-invalid' : null}"
+                           th:autofocus="${(#fields.hasErrors('contrasena') or #fields.hasErrors('contrasenaCompatible'))
+                               and !#fields.hasErrors('email') and !#fields.hasErrors('nombre')}"
+                           th:attr="aria-invalid=${#fields.hasErrors('contrasena') or #fields.hasErrors('contrasenaCompatible')},
+                                    aria-describedby=${'clave-ayuda'
+                                        + (#fields.hasErrors('contrasena') ? ' clave-error' : '')
+                                        + (#fields.hasErrors('contrasenaCompatible') ? ' clave-bytes-error' : '')}">
+                    <p id="clave-ayuda" class="form-text" th:text="#{registro.claveAyuda}"></p>
+                    <p id="clave-error" class="invalid-feedback" th:errors="*{contrasena}"></p>
+                    <p id="clave-bytes-error" class="invalid-feedback" th:errors="*{contrasenaCompatible}"></p>
+                </div>
+                <div class="d-flex flex-wrap gap-3">
+                    <button class="btn btn-primary" type="submit" th:text="#{registro.enviar}">Crear cuenta</button>
+                    <a class="btn btn-outline-secondary" th:href="@{/proyectos}" th:text="#{registro.volver}">Explorar proyectos</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
