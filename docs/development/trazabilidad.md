@@ -1,19 +1,57 @@
 # ReminisHub — trazabilidad
 
-## Estado actual — 16/11/2026
+## Estado actual — 17/11/2026
 
-- Etapa en curso: HTTPS local, OK plan recibido el 16/11; estabilizacion cerrada.
-- Rama: codex/estabilizacion-catalogo; ultimo commit aprobado: fba3f95 (E1B).
+- HTTPS cerrado tras defensa corregida; registro local aprobado, en implementacion.
+- Rama: codex/https-local; cierre de estabilizacion: 92f6524.
 - Stack confirmado nuevamente: Thymeleaf y PostgreSQL.
 - Base autorizada de pruebas: jdbc:postgresql://localhost:5432/reminishub_test.
 - reminishub_dev es produccion segun el estudiante; excluirla de pruebas.
 - Arranque: Maven Wrapper spring-boot:run con variables locales configuradas.
 - Pruebas: scripts/verificar.ps1 -Offline desde la raiz.
 - D1–D7 resueltas conforme a la seccion siguiente.
-- Cambios en revision: capas, singular/plural, recuperacion de pagina y Swagger.
+- HTTPS: verificacion automatica PASS; navegador confirmado por el estudiante.
 - Ejercicio de estado vacio EN revisado; regresion PostgreSQL PASS, 14 pruebas.
 - Estabilizacion: defensa revisada; teclado/Swagger confirmados por el estudiante.
 - E2 y requisitos de escritura/reporte siguen pendientes.
+
+Defensa HTTPS completada: el estudiante distingue acceso JavaScript a cookie Secure sin HttpOnly y cifrado sin verificacion de identidad con curl -k. Se acepto continuar al registro. Ficha etapa-02a.md. Consulta publica sigue abierta; solo las acciones de colaboracion requieren cuenta. RF-05 incluye registro local y login, RF-06 Google, ambos obligatorios segun la matriz acordada.
+
+Actualizacion HTTPS: [Declarado por el estudiante] confianza del navegador validada. [Verificado: keytool -printcert sobre localhost.crt] SAN localhost/127.0.0.1, RSA 3072, SHA256withRSA, uso serverAuth, CA=false; vigencia del 16/11/2026 14:59:51 al 16/12/2026 14:59:51 America/Bogota. La fecha de entrega 23/11 queda dentro de vigencia. Defensa pendiente de respuestas, como solicito el estudiante al indicar que investigaria; no se presume aprendizaje por inspeccionar el certificado.
+
+### Siguiente plan propuesto: registro local, 3–4 h
+
+Objetivo RF-05 parcial y criterios 1/2/4: GET/POST /registro, formulario ES/EN y persistencia de colaborador con BCrypt. La tabla usuario exige correo normalizado y unico, nombre valido, rol y activo. Aprovechar constraints existentes; sin migracion prevista. No incluir login/JWT en este hito.
+
+Archivos previstos: UsuarioRepository, RegistroService, formulario de registro mutable para binding, controlador web, plantilla registro.html, bundles, SecurityConfig y pruebas unitarias/integracion. Error de correo duplicado comprensible, sin trazas; normalizar antes de guardar y tratar tambien la carrera de unicidad. Rol COLABORADOR y activo fijados por servidor; formulario limitado a nombre, correo y contrasena. No devolver ni repoblar contrasena/hash. CSRF activo y ejecucion del formulario sobre HTTPS.
+
+Aceptacion: registro valido y hash comprobado mediante PasswordEncoder.matches; rechazo de campos invalidos, correo duplicado normalizado y manipulacion de rol; CSRF sin token 403; regresion de catalogo y errores ES/EN. PostgreSQL exclusivamente reminishub_test, fixtures reversibles. Comprobar documentacion oficial de la version real antes de incorporar APIs. Tu turno reservado: prueba de rechazo de rol ADMIN enviado por cliente. Miniclase: binding, validacion, hash y transaccion. Defensa creciente: carrera de dos registros iguales, limite entre DTO y autorizacion, diferencia entre TLS y hash. Aprobacion especifica del plan de registro pendiente.
+
+## Orden de entrega revisado — 16/11/2026
+
+Stack confirmado: Thymeleaf y PostgreSQL. La estabilizacion quedo cerrada con 14 pruebas verificadas y recorrido de teclado/Swagger declarado por el estudiante. Commit 92f6524. El cambio previo de .env.example sigue local, fuera de ese commit.
+
+| Orden | Resultado y dependencias | Dedicacion estimada del estudiante con asistencia |
+|---|---|---|
+| 1 | HTTPS local, certificado y confianza verificados | 1–2 h |
+| 2 | Registro BCrypt, login/JWT, logout y roles con CSRF; dividir en hitos de hasta 4 h | 5–7 h |
+| 3 | Google OIDC, proveedor+sub y JWT propio; preparar cliente Google desde ahora | 2–4 h |
+| 4 | Presentacion/CRUD, consentimiento, moderacion y auditoria en la misma transaccion; dividir en hitos de hasta 4 h | 6–9 h |
+| 5 | Reporte JDBC/CSV y bitacora administrativa contrastados con SQL | 2–3 h |
+| 6 | Revision integrada, JavaDoc/OpenAPI, OWASP, i18n y accesibilidad | 4–6 h |
+| 7 | Cinco participantes, tres tareas, SUS y documentacion final; convocar desde ahora | 4–6 h |
+
+[Inferencia] Total restante 24–37 h, con pruebas y defensa. No equivale a tiempo autonomo de IA ni garantiza capacidad de herramientas. Disponibilidad previa: 1–4 h/dia, miercoles sin disponibilidad. Hasta el 20 quedan 4–16 h contando hoy completo como maximo; hasta el 22, 6–24 h. La hora actual reduce lo disponible hoy. Incluso el extremo favorable deja margen nulo para incidencias antes de la entrega del 23. No se puede afirmar que el alcance completo estara listo.
+
+Calendario condicionado: 16 HTTPS; 17 registro y primera parte de autenticacion; 18 no disponible; 19 completar autenticacion y comprobar permisos; 20 regresion y congelamiento de lo realmente aceptado. Los modulos 3–7 requieren disponibilidad adicional o cambio acordado de plazo/alcance. No trasladarlos silenciosamente al 21–22, reservados para cierre. Si se mantiene el plazo y la disponibilidad, presentar al docente las carencias de CRUD/Swagger (criterio 2), JDBC (3), Google/triggers (4) y reporte/usabilidad (5). La nota depende del docente; no asignar puntos inventados.
+
+Recortes propuestos en orden: fidelidad visual, RF-12 opcional, extras de auditoria y refactorizaciones decorativas. Los Must permanecen comprometidos hasta una decision explicita. Revisar disponibilidad exacta y capacidad de convocar participantes antes de prometer fechas de cada modulo.
+
+HTTPS en curso: perfil application-https.properties, comando scripts/iniciar-https.ps1 y guia docs/development/https-local.md. El alumno verifica SAN y vigencia como ejercicio. Arranque real pendiente de su entorno privado. La evaluacion docente aumenta a diagnostico y alternativas, con retroalimentacion y recomprobacion de conceptos mal explicados.
+
+Continuacion mientras el estudiante investiga la defensa: agregado scripts/verificar-https.ps1 para catalogo ES/EN, Swagger/OpenAPI y rechazo de nombre incorrecto usando el certificado publico y curl con validacion TLS activa. PASS de sintaxis PowerShell y git diff --check. Comprobacion real BLOCKED: localhost.crt ausente de la ubicacion acordada y sin servidor observado en 8443. Las preguntas de defensa permanecen pendientes; no se exige responderlas para preparar estas comprobaciones. Sigue pendiente el arranque en el entorno configurado del estudiante.
+
+Actualizacion HTTPS: tras el arranque del estudiante, Windows PowerShell 5.1 interrumpia el verificador al redirigir stderr del rechazo TLS esperado. Se sustituyo la redireccion del shell por --stderr de curl en ambas llamadas. [Verificado: powershell.exe -NoProfile -File scripts/verificar-https.ps1] PASS real, codigo 0: catalogo ES/EN, Swagger y OpenAPI con HTTP 200 y TLS validado; nombre incorrecto rechazado con codigo 60. Evidencias locales target/https/e38c8117cee84b43927b377534ae1e94. Se resuelve el bloqueo tecnico anterior. Pendientes confianza/recorrido HTTPS en navegador, ejercicio SAN/vigencia, defensa y aceptacion.
 
 Cierre autorizado: el estudiante delego la evaluacion final y confirmo continuar. Se corrigio su uso de «segregacion de validacion»: la cobertura depende de las aserciones y la independencia entre pruebas es una propiedad distinta. Ficha etapa-01c.md. Preferencia docente vigente: dificultad adaptativa, con preguntas de diagnostico y defensa de alternativas tras respuestas correctas; explicar y volver a comprobar errores conceptuales. La autorizacion de HTTPS no acepta anticipadamente esa etapa.
 
