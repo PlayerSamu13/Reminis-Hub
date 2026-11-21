@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:fragment="head(titulo, descripcion)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,7 @@
     <link rel="icon" type="image/svg+xml" th:href="@{/css/favicon.svg}">
     <link rel="stylesheet" th:href="@{/vendor/bootstrap-5.3.8.min.css}">
     <link rel="stylesheet" th:href="@{/css/reminishub.css}">
+    <script defer th:src="@{/js/navegacion.js}"></script>
 </head>
 <body>
 <header th:fragment="header" class="site-header">
@@ -17,18 +18,24 @@
             <span class="brand-mark" aria-hidden="true">r<span>.</span></span>
             <span>Reminis<span class="brand-accent">Hub</span><small th:text="#{brand.subtitle}">Ideas que continúan</small></span>
         </a>
-        <nav class="nav-links" th:attr="aria-label=#{nav.main}">
-            <a class="nav-catalog" th:href="@{/proyectos}" th:text="#{nav.catalog}">Explorar proyectos</a>
+        <button hidden type="button" class="btn btn-outline-secondary nav-toggle" aria-controls="nav-principal" aria-expanded="false" th:text="#{nav.menu}">Menú</button>
+        <nav id="nav-principal" class="nav-links" th:attr="aria-label=#{nav.main}">
+            <a class="nav-catalog" th:href="@{/proyectos}" th:attr="aria-current=${rutaActual == '/proyectos' ? 'page' : (rutaActual != null and #strings.startsWith(rutaActual, '/proyectos/') ? 'location' : null)}" th:text="#{nav.catalog}">Explorar proyectos</a>
+            <a class="nav-catalog" th:if="${sesion != null}" th:href="@{/mis-propuestas}" th:attr="aria-current=${rutaActual == '/mis-propuestas' ? 'page' : (rutaActual != null and #strings.startsWith(rutaActual, '/propuestas/') ? 'location' : null)}" th:text="#{nav.propuestas}">Mis propuestas</a>
+            <a class="nav-catalog" th:if="${sesion != null and sesion.rol() == 'ADMIN'}" th:href="@{/admin/propuestas}" th:attr="aria-current=${rutaActual == '/admin/propuestas' ? 'page' : null}" th:text="#{nav.moderacion}">Moderación</a>
+            <a class="nav-catalog" th:if="${sesion != null and sesion.rol() == 'ADMIN'}" th:href="@{/admin/reporte}" th:attr="aria-current=${rutaActual == '/admin/reporte' ? 'page' : null}" th:text="#{nav.reporte}">Reporte</a>
+            <a class="nav-catalog" th:if="${sesion != null and sesion.rol() == 'ADMIN'}" th:href="@{/admin/bitacora}" th:attr="aria-current=${rutaActual == '/admin/bitacora' ? 'page' : null}" th:text="#{nav.bitacora}">Bitácora</a>
             <div class="nav-sesion">
                 <span th:if="${sesion != null}" class="nav-usuario" th:text="#{nav.saludo(${sesion.nombre()})}">Sesión activa</span>
                 <form th:if="${sesion != null}" th:action="@{/logout}" method="post">
                     <button type="submit" th:text="#{nav.salir}">Salir</button>
                 </form>
-                <a th:if="${sesion == null}" th:href="@{/login}" th:text="#{nav.entrar}">Iniciar sesión</a>
+                <a th:if="${sesion == null}" th:href="@{/login}" th:attr="aria-current=${rutaActual == '/login' ? 'page' : null}" th:text="#{nav.entrar}">Iniciar sesión</a>
             </div>
             <div class="language-switch" role="group" th:attr="aria-label=#{nav.language}">
                 <a th:href="${idiomaEs}" lang="es" hreflang="es" aria-label="ES — Español" th:attr="aria-current=${#locale.language == 'es' ? 'true' : null}">ES</a>
                 <a th:href="${idiomaEn}" lang="en" hreflang="en" aria-label="EN — English" th:attr="aria-current=${#locale.language == 'en' ? 'true' : null}">EN</a>
+                <a th:href="${idiomaEo}" lang="eo" hreflang="eo" aria-label="EO — Esperanto" th:attr="aria-current=${#locale.language == 'eo' ? 'true' : null}">EO</a>
             </div>
         </nav>
     </div>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{reporte.titulo}, #{reporte.descripcion})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5">
+    <h1 th:text="#{reporte.titulo}"></h1>
+    <p th:text="#{reporte.descripcion}"></p>
+    <form th:action="@{/admin/reporte}" method="get" class="row g-3 mb-4">
+        <input type="hidden" name="lang" th:value="${#locale.language}">
+        <div class="col-sm-4"><label for="anio" class="form-label" th:text="#{reporte.anio}"></label>
+            <input id="anio" name="anio" type="number" min="2000" max="2100" class="form-control" th:value="${anio}"></div>
+        <div class="col-sm-4"><label for="categoria" class="form-label" th:text="#{filter.category}"></label>
+            <select id="categoria" name="categoria" class="form-select">
+                <option value="" th:text="#{filter.allCategories}"></option>
+                <option th:each="codigo : ${categorias}" th:value="${codigo}" th:selected="${codigo == categoria}"
+                        th:text="${#messages.msgOrNull('categoria.' + codigo) ?: codigo}"></option>
+            </select></div>
+        <div class="col-sm-4 d-flex flex-wrap align-self-end gap-2"><button class="btn btn-primary" th:text="#{reporte.filtrar}"></button>
+            <a class="btn btn-outline-secondary" th:href="@{/admin/reporte}" th:text="#{reporte.limpiar}"></a></div>
+    </form>
+    <p th:text="#{reporte.resumen(${total},${ficticios})}"></p>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-outline-primary" th:href="@{/admin/reporte.csv(anio=${anio},categoria=${categoria},lang=${#locale.language})}" th:text="#{reporte.exportar}"></a>
+        <a class="btn btn-outline-secondary" th:href="@{/admin/bitacora(lang=${#locale.language})}" th:text="#{bitacora.titulo}"></a>
+    </div>
+    <p class="form-text" th:text="#{reporte.csvAyuda}"></p>
+    <p th:if="${#lists.isEmpty(filas)}" class="alert alert-info" role="status" th:text="#{reporte.vacio}"></p>
+    <div th:unless="${#lists.isEmpty(filas)}" class="table-responsive" tabindex="0" th:attr="aria-label=#{reporte.tabla}">
+        <table class="table table-striped align-middle">
+            <caption th:text="#{reporte.tabla}"></caption>
+            <thead><tr><th scope="col" th:text="#{reporte.anio}"></th><th scope="col" th:text="#{reporte.categoria}"></th><th scope="col" th:text="#{reporte.estado}"></th><th scope="col" th:text="#{reporte.total}"></th><th scope="col" th:text="#{reporte.ficticios}"></th></tr></thead>
+            <tbody><tr th:each="fila : ${filas}"><td th:text="${fila.anio()}"></td><td th:text="${fila.categoria()}"></td><td th:text="#{${'reporte.estado.' + fila.estado()}}"></td><td th:text="${fila.total()}"></td><td th:text="${fila.ficticios()}"></td></tr></tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body></html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(${moderacion} ? #{propuestas.pendientes} : #{propuestas.lista}, #{propuestas.meta})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center mb-4">
+        <h1 th:text="${moderacion} ? #{propuestas.pendientes} : #{propuestas.lista}"></h1>
+        <a th:unless="${moderacion}" class="btn btn-primary" th:href="@{/propuestas/nueva}" th:text="#{propuestas.nueva}"></a>
+    </div>
+    <p class="alert alert-light border" th:if="${propuestas.isEmpty()}" th:text="#{propuestas.vacia}" role="status"></p>
+    <ul class="list-unstyled">
+        <li class="border rounded p-3 mb-3" th:each="p : ${propuestas}">
+            <h2 class="h5"><a class="proposal-title" th:href="@{/propuestas/{id}(id=${p.id})}" th:text="${p.nombre}"></a></h2>
+            <p class="mb-0"><span th:text="#{propuestas.estado}"></span>: <strong th:text="${#messages.msg('propuestas.estado.' + p.estado)}"></strong></p>
+            <p th:if="${p.motivoDecision != null}" class="mt-2 mb-0" th:text="${p.motivoDecision}"></p>
+        </li>
+    </ul>
+    <nav class="d-flex gap-3 mt-4" th:attr="aria-label=#{propuestas.paginacion}">
+        <a th:if="${pagina > 0}" class="btn btn-outline-secondary"
+           th:href="${moderacion} ? @{/admin/propuestas(pagina=${pagina - 1},lang=${#locale.language})} : @{/mis-propuestas(pagina=${pagina - 1},lang=${#locale.language})}" th:text="#{propuestas.anterior}"></a>
+        <a th:if="${propuestas.size() == 10 and pagina < 1000}" class="btn btn-outline-secondary"
+           th:href="${moderacion} ? @{/admin/propuestas(pagina=${pagina + 1},lang=${#locale.language})} : @{/mis-propuestas(pagina=${pagina + 1},lang=${#locale.language})}" th:text="#{propuestas.siguiente}"></a>
+    </nav>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body></html>
