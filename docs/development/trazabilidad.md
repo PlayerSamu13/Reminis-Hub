@@ -1,9 +1,193 @@
 # ReminisHub — trazabilidad
 
+## Estado actual — 21/11/2026
+
+- Rama local codex/google-oidc. e7656f9 incorpora código, scripts, pruebas y migración V7.
+- Autenticación, propuestas, moderación, reporte, auditoría y exportación están implementados.
+- Última regresión completa confirmada antes del ajuste visual: 116 pruebas, sin fallos, errores ni omisiones, sufijo d4f2629178474a8e82490ade9865b2a1.
+- Ajustes de interfaz y CSV en 6c74028. Pasaron 22 pruebas seleccionadas y una repetición de las cinco del reporte. Se verificó la descarga real en HTTPS.
+- Para ejecutar y probar, consultar README.md y scripts/README.md. Usar exclusivamente reminishub_test en verificaciones.
+- La evaluación de usabilidad con participantes y el cierre académico siguen pendientes de evidencia.
+
+## Corrección de la regresión PostgreSQL — 20/11/2026
+
+Evidencia aportada y contrastada con Surefire, sufijo `3f1a9caf80434806b097a5412bebeffe`: 116 pruebas, 1 fallo, 2 errores, 0 omisiones; Maven 1. Las suites de propuestas y reporte con PostgreSQL pasaron. No constituye aprobación completa.
+
+- AuditoriaIntegrationTests: Flyway agota el pool de una conexión durante el arranque (SQLTransientConnectionException); el segundo error es la omisión del nuevo intento de cargar el contexto fallido. Se configura `spring.flyway.url` solo en esa prueba para usar su datasource propio, conservando el pool JPA de tamaño uno, la comprobación de PID y rollback. No se modifica ninguna migración.
+- SesionE2ETests: el registro devuelve 429 antes del login; las peticiones simuladas compartían la IP y el limitador del contexto reutilizado. Cada caso usa ahora una IP documental distinta mediante remoteAddr. El limitador real, CSRF y las aserciones de sesión siguen activos.
+- Segunda ejecución `a8a943012a7a45c187b035add1cf9e27`: 116 pruebas, cero fallos, dos errores. SesionE2ETests PASS 3/3. Auditoría ahora falla por contraseña ausente en el datasource separado.
+- Corrección del diagnóstico de compatibilidad: el fuente local spring-boot-flyway-4.1.2-sources.jar, FlywayAutoConfiguration.PropertiesFlywayConnectionDetails, devuelve directamente las propiedades user/password; no hereda credenciales como indicaba la documentación web general. Se enlazan explícitamente DB_USER/DB_PASSWORD por suppliers solo en la prueba, sin imprimir ni persistir valores.
+- Commit inicial de aislamiento: `4dbfed8`; compilación y 5 unitarias PASS. Segunda corrección de credenciales pendiente de validación PostgreSQL.
+- Verificación posterior: 116/116 PASS con sufijo d4f2629178474a8e82490ade9865b2a1; XML contrastados. El proceso del agente continúa sin variables DB.
+
+## S2–S5 — alcance autorizado; S2 en verificación
+
+Ejecución inicial aportada por el estudiante: base reminishub_test, web_user sin superusuario/creación de roles/bases y versiones 1–6 exitosas. El fixture falló en ck_proyecto_resumen por un espacio final de repeat. Se corrigió con btrim sin relajar V2. Segunda ejecución aportada: PASS de alta/actor/transiciones/inmutabilidad/retiro, ROLLBACK y PASS del contexto local. La salida no determina propiedad de tablas ni privilegios completos; no acredita aplicación permanente ni integración JPA.
+
+El estudiante aprobó expresamente S2–S5 y confirmó aplicación detenida/base reminishub_test. Secuencia: S2 integridad y actor transaccional; S3 presentación; S4 CRUD privado/moderación; S5 reporte JDBC/CSV. Swagger y JavaDoc acompañarán los endpoints reales, no se inventan endpoints para triggers.
+
+Candidata V7 en `docs/development/sql/V7__integridad_y_auditoria_proyectos.sql`, todavía fuera del classpath de Flyway: actor activo obligatorio, propiedad y moderación, grafo de estados, retiro final, fechas, es_ficticio inmutable, coherencia de autorización, altas/cambios auditados y bloqueo de UPDATE/DELETE/TRUNCATE del historial. No reconstruye historia de V5 ni cambia las migraciones aplicadas. Preflight rechaza datos incompatibles sin corregirlos automáticamente. Los casos del script pasaron en PostgreSQL según la salida del estudiante; faltan casos y comprobación JPA/pool.
+
+`docs/development/sql/verificar_s2.sql` ejecuta la candidata y fixtures UUID en una transacción que revierte; verifica actor, altas/transiciones, operaciones prohibidas y limpieza del contexto local en la misma conexión. Los avances de secuencias pueden dejar huecos incluso tras rollback. No toca flyway_schema_history ni deja aplicada V7. Debe correrse solo contra reminishub_test, con aplicación detenida y sin escrituras concurrentes. Una falla psql cierra conexión y revierte la transacción abierta.
+
+BLOCKED ejecución: psql fuera del sandbox alcanzó PostgreSQL, que respondió `fe_sendauth: no password supplied`; DB_* ausentes en el proceso. Se pidió ejecución local sin transmitir contraseña. No se aplica V7 permanentemente ni se habilitan escrituras hasta comprobar la base. Verificar también privilegios de tablas/funciones antes de cerrar S2: un propietario/superusuario puede eludir triggers; permitir INSERT directo a bitácora al rol técnico requiere endurecimiento de privilegios y diseño del propietario, no afirmar protección absoluta.
+
+Pendientes S2: ejecutar SQL, ampliar casos de autores/rollback con savepoint/pool y controlar privilegios; integrar actor con JPA en misma conexión y suite PostgreSQL; promover candidata a recursos Flyway después de validación. S3–S5 autorizadas pero aún no implementadas. No hay commit nuevo: cambios previos de autenticación siguen sin aceptar como cierre, se conservaron. Preparar commit exclusivo de S2 después de verificar su diff, sin incluir incidentalmente cambios previos.
+
+Fuentes técnicas consultadas: documentación oficial PostgreSQL 18 sobre CREATE TRIGGER y set_config local a transacción. Una prueba SQL en una conexión no equivale a probar el pool JPA de Spring.
+
+## S1b — registro y correo del login, 19/11/2026
+
+Plan aprobado mediante OK plan. AUD-16: IntentosRegistro limita cinco intentos por IP de conexión y minuto, antes del servicio/BCrypt, contando también solicitudes con datos inválidos que llegan al controlador. Máximo 4096 IP activas; al saturarse rechaza IP nuevas hasta que expire una entrada, sin desalojar bloqueos vigentes. No confía en X-Forwarded-For. Estado en memoria de una instancia: reiniciar lo borra; redes compartidas comparten cuota; no es protección contra un ataque distribuido. Se conserva por decisión aprobada el 409 y mensaje de correo duplicado: sigue siendo posible enumerar correos, aunque limitado.
+
+AUD-17: correo normalizado y limitado a 254 caracteres en modelo, renderizado con th:value escapado; contraseña nunca repoblada. Se verificaron 401/429/503 y entrada HTML maliciosa. Registro 429 incluye Retry-After y mensaje ES/EN, sin llamada al servicio de persistencia. No se añadieron dependencias ni migraciones. Trabajo previo conservado en la misma rama sucia; sin commits.
+
+PASS Maven Wrapper offline/JDK25: 55 pruebas, cero fallos, errores u omisiones, 17:08:37 -05:00; XML de ocho suites inspeccionados. Log local target/s1b.log. Incluye 2 pruebas del limitador (expiración y saturación), 13 de registro web, 19 de autenticación y 8 de tokens. Compila también las pruebas PostgreSQL, pero no las ejecuta. diff --check PASS.
+
+PASS adicional: TokenServiceTests 9/9 a las 17:09:33, tras añadir fallo del JwtEncoder usado por el TokenService real y comprobar respuesta 503 sin Set-Cookie desde LoginController; también rechaza cuentas ausentes/inactivas. Log target/s1b-firmante.log. Esta ejecución es separada del conjunto de 55.
+
+Pendientes: regresión PostgreSQL con variables locales sobre reminishub_test, recorrido de navegador, ejercicio reservado de reapertura login/CSRF y cierre de etapa. No se afirma PASS de BD ni de concurrencia de registros reales. Tu turno permanece sin implementar por el asistente.
+
+Preparación para defensa: ¿por qué limitar antes de BCrypt y no después? ¿Por qué usar IP de conexión y no aceptar cualquier X-Forwarded-For? ¿Qué protege th:value y por qué no se repuebla la contraseña? Límites a explicar: cuota por NAT, estado local, 409 que permite enumeración y diferencia entre bloqueo de servicio comprobado con mock e integración PostgreSQL real.
+
+## S1a — correcciones autorizadas, 19/11/2026
+
+El estudiante aprobó S1a. Se reprodujo FAIL de logout: una prueba con formulario CSRF renderizado y recurso estático intermedio comprobó que la sesión auxiliar permanecía válida. LoginController ahora invalida esa sesión y limpia el contexto únicamente después de revocar el jti. La misma prueba pasa y conserva el rechazo del token revocado simulado.
+
+Login local responde 503 con mensaje ES/EN ante DataAccessException/JwtEncodingException sin emitir cookie. Google controla esas excepciones y redirige al error genérico limpiando el contexto. TokenService rechaza una cuenta ausente/inactiva mediante AuthenticationException en vez de IllegalStateException; no se captura Exception indiscriminadamente. Se eliminó únicamente el XML residual DiagnosticoTemporalTests aprobado, sin mostrar su token ni borrar la evidencia restante.
+
+PASS: Maven Wrapper/JDK25, 49 pruebas (18 autenticación web, 2 Google web, 12 registro web, 5 registro servicio, 4 Google servicio, 1 limitador y 7 token), cero fallos/errores/omisiones, 16:46:16 -05:00. Después se añadió prueba del handler Google real ante fallo simulado de persistencia: GoogleWebTests 3/3 PASS a las 16:47:04, sin cookie ni llamada a TokenService. No sumar ambas ejecuciones como una suite única. Logs locales s1a-antes.log, s1a-despues.log y s1a-google.log. diff --check PASS.
+
+Pendiente de cierre: PostgreSQL actual (variables ausentes), recorrido HTTPS/Google real, fallo del codificador específico y comprobación completa de renovación CSRF en login. El callback probado directamente no acredita intercambio externo OIDC. No se hicieron commits ni cambios de DB/migraciones. Se conserva rama sucia codex/google-oidc para no mezclar/reubicar el trabajo previo.
+
+Tu turno reservado: extender logoutAutenticadoBorraLaCookie para abrir GET /login sin reutilizar la sesión invalidada y comprobar formulario CSRF disponible; no implementado en lugar del estudiante. Defensa: explicar por qué revocar antes de invalidar, por qué fallo técnico es 503 y credenciales inválidas 401, y por qué probar el handler no prueba Google externo. La etapa sigue en verificación, no APROBADA.
+
+## Auditoría y guía de continuidad — 19/11/2026
+
+### Estado actual de esta revisión
+
+- Auditoría solicitada por el estudiante; correcciones sujetas a aprobación. No se cambió código funcional, configuración, migraciones, ramas ni commits.
+- Árbol auditado: `codex/google-oidc`, HEAD `a6ca760`, con 14 archivos modificados y 6 nuevos antes de esta actualización documental. El HEAD por sí solo no representa la aplicación actual.
+- Google vuelve a funcionar según declaración del estudiante; no se repitió el consentimiento real en esta auditoría.
+- PASS nuevo: compilación dentro del ciclo Maven test y 48 pruebas sin PostgreSQL; cero fallos, errores u omisiones.
+- BLOCKED: suite PostgreSQL actual e historial aplicado; este proceso no dispone de DB_URL/DB_USER/DB_PASSWORD. No se accedió a reminishub_dev.
+- NOT RUN: nuevo recorrido visual/teclado/axe, escaneo de dependencias, prueba de carga y estudio humano. La evidencia histórica conserva su fecha y alcance.
+- Siguiente paso propuesto: cerrar seguridad de sesión/errores con regresiones; luego integridad transaccional, presentación, CRUD/moderación, bitácora y reporte.
+- Ninguna propuesta de esta sección se considera aprobada por haber sido documentada.
+
+### Alcance y evidencia
+
+[Verificado] Lectura de AGENTS.md, PROMPT_INICIO.md en Downloads, trazabilidad, fuentes Java, configuración sin mostrar secretos, migraciones V1–V6, plantillas compartidas/login, JavaScript del catálogo, pruebas y pom.xml. Rúbrica original inspeccionada visualmente en Downloads/Proyecto PW/Rúbrica.png. No se encontró el PDF del anteproyecto en el árbol del workspace: su contrato se contrasta mediante PROMPT_INICIO, no se afirma haber releído el original.
+
+[Verificado] Java 25, Boot 4.1.2, springdoc 3.2.0; MockitoBean presente. ddl-auto=validate, open-in-view=false, errores sin detalles internos y flyway.clean-disabled=true. DTO públicos para catálogo/sesión, consultas parametrizadas y filtro PUBLICADO en servidor. BCrypt coste 12; alta con COLABORADOR fijado en servidor; JWT firmado, cuenta/rol reconsultados y revocación por jti. Estos controles no acreditan por sí solos toda la seguridad.
+
+| Verificación | Resultado y alcance |
+|---|---|
+| Maven Wrapper offline con JDK 25 | PASS, salida 0, 19/11/2026 16:34:52 -05:00. Log local `reminis-hub/target/auditoria-19.log`. Primer intento bloqueado por permisos del caché Maven; repetido con autorización. |
+| Surefire de esta ejecución | PASS: AutenticacionWebTests 17, GoogleWebTests 2, RegistroServiceTests 5, RegistroWebTests 12, AccesoGoogleTests 4, IntentosLoginTests 1, TokenServiceTests 7. Total 48; fallos/errores/omitidas 0. |
+| Idiomas | PASS: 103 claves ES y 103 EN, sin diferencias. No acredita traducción ni accesibilidad de todos los estados. |
+| Git | PASS diff --check; avisos LF/CRLF, sin errores de espacios. Sin diferencias pendientes en db/migration. No demuestra coincidencia con checksums aplicados. |
+| PostgreSQL/Flyway | BLOCKED en esta sesión por variables ausentes. Confirmar solo `jdbc:postgresql://localhost:5432/reminishub_test`, contraseña oculta, antes de ejecutar `./scripts/verificar.ps1 -Offline`. |
+
+Comando ejecutado desde reminis-hub (no necesita PostgreSQL):
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-25.0.5'
+.\mvnw.cmd -o '-Dtest=TokenServiceTests,AutenticacionWebTests,RegistroWebTests,RegistroServiceTests,IntentosLoginTests,GoogleWebTests,AccesoGoogleTests' test
+```
+
+### Cumplimiento real
+
+| IDs | Evaluación frente al árbol de trabajo |
+|---|---|
+| RF-01–04 | Implementados y aprobados históricamente: catálogo, filtros, detalle, AJAX y paginación. Regresión PostgreSQL actual pendiente. |
+| RF-05 | Registro/login/logout implementados. Pruebas web y unitarias actuales PASS; sesión auxiliar y rutas de error requieren los ajustes propuestos abajo. |
+| RF-06 | Implementado, no cerrado con evidencia completa: identidad GOOGLE+sub, alta transaccional, JWT propio y rechazo de colisión local. Las 2 pruebas web no cubren callback exitoso ni emisión tras fallos de infraestructura. |
+| RF-07–08 | Solo base de entidades/esquema. No existen presentación ni moderación funcionales. |
+| RF-09 | Tabla/entidad presentes; no hay CREATE TRIGGER ni funciones de auditoría en V1–V6, ni consulta administrativa. |
+| RF-10 | No existe reporte JDBC/CSV. JdbcTemplate en revocación no satisface este requisito. |
+| RF-11–12 | No implementados; Mis propuestas Should, reenvío Could. No confundir reenvío opcional con actualización obligatoria de RF-13. |
+| RF-13 | API de lectura; faltan crear, actualizar y retirar con permisos/Swagger. |
+| NF-01–03 | Parciales: ES/EN, HTTPS, BCrypt, cookies/CSRF y 401 presentes. No hay autorización ADMIN/propiedad sobre los módulos aún inexistentes. Un 403 por CSRF no prueba roles. |
+| NF-04 | Esta revisión aporta evidencias; falta cerrar OWASP sobre todos los flujos y documentar riesgos residuales. |
+| NF-05–06 | JavaDoc parcial y pruebas existentes; falta generación completa y cobertura de escritura, triggers, concurrencia, JDBC y Google persistido. |
+| NF-07 | Auditorías históricas del catálogo/registro; falta repetir sobre pantallas finales y estados de error. |
+| NF-08–09 | No hay resultados verificables de cinco participantes ni documentación académica final. Guía de sustentación sí existe. |
+
+Semáforo por rúbrica (no equivale a una calificación): frontend AMARILLO; backend ROJO por CRUD; datos ROJO por reporte JDBC; seguridad ROJO por triggers y permisos de negocio; i18n/accesibilidad/usabilidad/reporte ROJO por reporte/estudio pendientes. Se conserva Thymeleaf/PostgreSQL por decisión vigente. La imagen original también menciona Angular/MySQL: la aceptación académica de alternativas no se deduce del código.
+
+### Contraste de OpenCode: causas y propuestas para aprobar
+
+Las conclusiones siguientes distinguen inspección estática de reproducción. No se inyectaron fallos en el servidor ni se realizaron ataques de carga.
+
+| ID / prioridad | Evidencia y causa | Propuesta y prueba de aceptación |
+|---|---|---|
+| AUD-14 / BAJO, endurecimiento | JwtConfig/TokenService: RH_TOKEN sin prefijo ni aud; cookie ya Secure/HttpOnly/Lax, Path=/ y sin Domain. Vigencia validada 1–60 minutos; no renovación deslizante ni mecanismo de rotación de claves. No es por sí solo un acceso indebido probado. | Opcional: __Host-RH_TOKEN con caducado de cookie antigua y pruebas de alta/lectura/logout. Definir aud solo con contrato de destinatario, validarlo al recibir. Documentar expiración y cambio de clave; no introducir refresh tokens por rutina. |
+| AUD-15 / MEDIO | LoginController.salir revoca jti y elimina cookie, pero no invalida HttpSession; SesionesRevocadas elimina vencidos solo en revocar. La sesión puede contener estado OIDC además de CSRF: no afirmar que solo guarda CSRF. | Tras revocación exitosa, invalidar sesión existente y limpiar contexto; comprobar logout repetido, token copiado rechazado, nuevo CSRF al volver y login Google posterior. Limpieza periódica acotada de revocaciones como cambio separado; conservar margen de expiración. No borrar revocaciones aún vigentes. |
+| AUD-16 / MEDIO | RegistroController devuelve 409 específico; RegistroService ejecuta BCrypt y persistencia sin limitador. Es enumeración observable por diseño UX, no filtración de contraseñas. Existe prueba PostgreSQL de consulta previa desactualizada, no carrera simultánea. | Aprobar explícitamente mantener mensaje útil o respuesta uniforme. Añadir límite acotado antes de BCrypt, con 429/Retry-After, sin confiar en X-Forwarded-For arbitrario. Probar dos transacciones concurrentes y un único registro final. No añadir CAPTCHA ni dependencia sin justificar. |
+| AUD-17 / BAJO | LoginController no devuelve correo en modelo y login.html no tiene th:value; cada fallo vacía el campo. | Repoblar correo limitado/escapado para 401 y 429, contraseña siempre vacía. Prueba de texto malicioso escapado y ES/EN. |
+| AUD-18 / MEDIO | GoogleConfig captura solo AuthenticationException/DataIntegrityViolationException. TokenService puede fallar con IllegalStateException, JwtEncodingException o error de acceso a datos. Login local comparte la emisión sin cobertura específica. Ruta excepcional no absorbida confirmada por lectura; el 500 bajo fallo inducido NO se reprodujo. | Primero prueba de fallo controlado; después tratamiento específico de infraestructura/emisión, error genérico localizado y diagnóstico saneado sin JWT, cookies ni credenciales. No capturar Exception indiscriminadamente ni declarar éxito. Probar ausencia de cookie de autenticación. No sincronizar correo/nombre automáticamente: podría romper identidad local; decisión de producto separada. |
+| AUD-19 / BAJO, parcialmente incorrecto | WebConfig no fija Secure; sí fija HttpOnly. No configurar SameSite no significa que falte: CookieLocaleResolver usa Lax por defecto en documentación oficial. Confirmación de cabecera real pendiente. GET modifica solo preferencia de idioma. | Verificar cabecera con versión en ejecución; documentar GET de preferencia. Si se exige Secure, resolver primero catálogo HTTP público (cookie Secure no persiste idioma por HTTP): decidir HTTPS completo o alcance explícito. |
+| AUD-20 / BAJO, rendimiento no demostrado | CatalogoService permite página 10000 (offset 60000) y búsqueda LIKE sobre nombre/resumen; no hay trigramas. Hay índice parcial de catálogo y batch_fetch_size=20; no diagnosticar N+1 sin medir. | Medir EXPLAIN ANALYZE y latencias con volumen representativo. Solo después ajustar límite o índice en migración nueva; no instalar pg_trgm preventivamente. |
+| AUD-21 / observación | Swagger público verificado en SecurityConfig; DevTools runtime optional en pom. El plugin Boot excluye DevTools por defecto del JAR ejecutable: el POM no prueba que se distribuya dentro. No hay escáner/CI configurados. | Inspeccionar JAR final y dependencias. Mantener Swagger accesible para defensa local; separar política de exposición externa si se necesita. CI remoto sigue fuera de alcance sin aprobación. |
+| AUD-22 / ALTO para futura escritura | Referencias a V3 en comentarios de V2 obsoletas; V3 solo agrega constraint CUENTA_PROPIA, V4 catálogos, V5 ejemplos y V6 revocación. Más grave que el comentario: no existen triggers versionados. La próxima versión disponible en este árbol es V7. Estado real de DB no consultado. | No editar V1–V6. Diseñar V7 con transiciones, actor transaccional, bitácora, timestamps e inmutabilidad. Verificar datos existentes, permisos, rollback y pool en base aislada antes de habilitar escrituras. |
+| AUD-25 / MEDIO, higiene local | Existe TEST-dev.reminishub.DiagnosticoTemporalTests.xml y contiene patrón JWT compacto; búsqueda literal Set-Cookie dio falso. No se mostró el valor ni se comprobó que siga siendo válido. target no está versionado. No hay print/dumpStack diagnóstico en fuentes actuales inspeccionadas. | Aprobar eliminación selectiva del informe residual y revisión de logs de diagnóstico relacionados, sin borrar otros informes probatorios. Si se demuestra credencial real vigente, revocarla; no rotar todos los secretos sin evidencia. Evitar salidas MockMvc completas en fallos con cookies. |
+
+Fuentes oficiales de contraste: [CookieLocaleResolver](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/i18n/CookieLocaleResolver.html), [empaquetado Boot](https://docs.spring.io/spring-boot/maven-plugin/packaging.html). Sus valores por defecto deben contrastarse con el artefacto/cabeceras efectivos, no solo con documentación current.
+
+### Otros riesgos y límites verificados
+
+1. **ALTO de entrega:** faltan RF-07–10/RF-13; la aplicación todavía no permite el recorrido académico completo. Tablas y entidades no equivalen a funcionalidades terminadas.
+2. **MEDIO de cobertura Google:** pruebas actuales usan repositorios simulados y no prueban callback exitoso con JWT/persistencia. Proponer prueba de handler/control de errores y pruebas PostgreSQL de identidad única, rollback y dos accesos concurrentes; consentimiento real por el estudiante. La colisión de correo no debe asociar cuentas silenciosamente.
+3. **MEDIO de navegación:** login siempre vuelve a /proyectos; logout a /login?salida. No satisface todavía el adjunto que exige destino original seguro y confirmación en inicio. Proponer destino relativo validado, nunca URL externa del cliente; probar rechazo de open redirects. No confundir con un fallo de autenticación.
+4. **MEDIO documental:** la matriz antigua NF-06 todavía cita 58/60 pruebas; hay evidencias posteriores y ahora 48 de un subconjunto. No sumar XML históricos ni presentar ese subconjunto como suite completa. Esta sección fecha el estado vigente sin borrar la historia.
+5. **Por confirmar, ciclo de sesión:** el login local emite JWT desde controlador y no ejecuta explícitamente renovación de CSRF/sesión. Antes de cambiarlo, probar ID/token antes y después del login y efecto en pestañas. No reintroducir SessionManagementFilter que invalidaba CSRF en cada petición JWT; conservar regresión de formulario + recurso estático + logout.
+
+Mapa OWASP 2025 preliminar: A01 acceso (PUBLICADO/DTO presentes, propiedad/ADMIN pendientes); A02 configuración (TLS y errores seguros, política Swagger pendiente); A03 cadena de suministro (versiones fijadas, análisis de dependencias no ejecutado); A04 criptografía (BCrypt/JWT/TLS, rotación operativa pendiente); A05 inyección (parámetros/escape, CSV futuro pendiente); A06 diseño (consentimiento/transiciones por completar); A07 autenticación (límite login presente, registro y ciclo sesión por revisar); A08 integridad (constraints/Flyway, triggers pendientes); A09 registro (bitácora inexistente y residuo local de token); A10 condiciones excepcionales (AUD-18). [Referencia oficial](https://top10.owasp.org/2025/). No constituye certificación ni prueba de ausencia de vulnerabilidades.
+
+### Guía de siguientes etapas — propuesta, no autorización
+
+Cada fila es un incremento de hasta aproximadamente 4 horas del estudiante. Las estimaciones incluyen revisión/comprensión y son orientativas; las pruebas reales y configuración externa pueden ampliarlas. Conservar Thymeleaf/PostgreSQL, no agregar dependencias sin decisión justificada. Cada incremento exige pruebas, revisión del diff y aprobación antes del commit; mensajes breves en español con el estilo del estudiante. No hacer push.
+
+| Orden / esfuerzo | Resultado y archivos previstos | Pruebas para aceptar y tema de defensa |
+|---|---|---|
+| S1a, 2–4 h | Cierre sesión/Google: LoginController, GoogleConfig, pruebas de acceso y sesión; AUD-15/18, confirmar ciclo CSRF, higiene AUD-25. | Reproducir antes del arreglo; no cookie al fallar emisión; revocación persistida; sesión auxiliar invalidada sin volver al 403; ES/EN. Explicar JWT frente a HttpSession y CSRF. |
+| S1b, 1–3 h | Registro/login: limitación aprobada, correo repoblado, destino seguro y confirmación de salida; AUD-16/17. Opcionales AUD-14/19 separados. | 429/Retry-After; 401 genérico; clave vacía; concurrencia de registro; no redirección externa. Explicar UX frente a enumeración. |
+| S2, 3–4 h | Integridad: V7 según versión disponible al empezar, SQL de verificación y pruebas; RF-09 parcial. | Transiciones válidas/inválidas, RETIRADO final, trigger insert/cambio, rollback integral, actor local transaccional y conexión reutilizada. Explicar por qué constraint y servicio se complementan. |
+| S3a, 3–4 h | Presentación: formulario/DTO, servicio transaccional, repositorios, API, plantilla ES/EN y selección de coautores; RF-07. | PENDIENTE_REVISION fijado por servidor, autor/actor autenticado, consentimiento real, rollback de relaciones, datos inválidos y 401/403. Nunca fixtures irreversibles sin autorización. |
+| S3b, 2–4 h | Mis propuestas y lectura privada, edición/retirada según matriz D7; completar CRUD RF-13 y RF-11 útil. | Otro colaborador no lee/edita; @Version evita pérdida de cambios; retiro lógico sin borrar bitácora; Swagger reproduce CRUD con CSRF. Reenvío RF-12 permanece opcional. |
+| S4a, 2–4 h | Moderación: servicio/panel ADMIN, aprobar/rechazar; RF-08. | 403 colaborador, motivo obligatorio, consentimiento revisable, transiciones concurrentes y auditoría en misma transacción. |
+| S4b, 1–2 h | Consulta de bitácora administrativa con DTO/paginación; RF-09 completo. | Actor/estados/fechas correctos y sin exposición pública; cotejo SQL. No habilitar editar/borrar historial. |
+| S5, 3–4 h | Reporte JdbcTemplate, vista y CSV ES/EN; RF-10. | Agregados iguales a SQL directo, filtros, ceros, permisos, delimitadores/comillas/saltos y fórmula maliciosa en CSV. Explicar diferencia JDBC/JPA. |
+| S6a, 2–4 h | Regresión completa PostgreSQL/HTTPS/Google, errores, roles, OpenAPI y JavaDoc generado; NF-02–06. | Leer Surefire de una ejecución identificada; instalación/migraciones en aislada; errores sin secretos y documentación concordante. |
+| S6b, 2–3 h | Auditoría final UI ES/EN móvil/escritorio, teclado, axe/Lighthouse; NF-01/07. | Formularios, vacíos, error, foco y nombre accesible; no proclamar WCAG global por un puntaje. |
+| S7, 4–6 h repartidas | Instrumentos y estudio real con ≥5 personas, SUS y documentación USCO; NF-08/09. Preparar instrumentos desde ahora, ejecutar con tres flujos listos. | Éxito/tiempo por tarea, respuestas reales, cálculo SUS reproducible, limitaciones y guía de defensa actualizada con código final. No inventar participantes. |
+
+Presupuesto total orientativo: **25–42 horas**, más incidencias externas. Con disponibilidad histórica de 1–4 h/día y hoy jueves 19, el máximo teórico 19–20 es 8 h, sujeto a lo ya consumido. No es defendible prometer todos los Must para el viernes 20. Los días 21–22 estaban reservados al cierre humano/documental, no son capacidad libre ilimitada.
+
+Calendario responsable propuesto: 19 cerrar S1 y decidir viabilidad; 20 priorizar S2 y primer incremento de presentación solo si S1 pasa y hay tiempo. 21–22 reservar usabilidad/documentación, pero reconocer que el estudio de tres tareas no puede completarse válidamente sin presentación y moderación. Entrega declarada 23/11. Para completar alcance se necesita ampliar disponibilidad/plazo o negociar explícitamente con docente; no sustituirlo por una promesa de velocidad de IA. Se pueden posponer fidelidad visual, RF-12 y extras, pero eso no elimina los faltantes obligatorios ni su impacto en los cinco criterios.
+
+Primera aprobación solicitada: **S1a**, manteniendo los demás como secuencia propuesta. Antes de programar: miniclase sobre autenticación por petición, sesión auxiliar y fallos parciales; prueba que demuestre cada defecto, cambio mínimo, regresión positiva/negativa y evidencia. Reserva docente sugerida: prueba pequeña de logout seguida de apertura de login con nuevo CSRF; ajustar según preferencia de estudiar con guía. No cerrar la etapa con pruebas simuladas si queda pendiente la integración real correspondiente.
+
+### Reanudación
+
+Auditoría 19/11 en este apartado; código funcional sin modificar. Rama codex/google-oidc, HEAD a6ca760 y cambios previos preservados. 48 pruebas sin DB PASS actuales. Integración DB BLOCKED por variables ausentes; solo reminishub_test autorizada. Google corregido según estudiante, callback completo pendiente de evidencia. Revisar propuestas S1a antes de tocar código. Triggers inexistentes en migraciones, V7 siguiente según árbol actual. CRUD/moderación/reporte y estudio humano pendientes. No prometer congelamiento completo 20/11 con disponibilidad histórica. Esperar aprobación de soluciones, sin commits de esta auditoría.
+
+### Corrección de cierre de sesión — 19/11/2026
+
+Verificado el defecto mediante navegador y regresión que carga el CSS entre el formulario y su envío. SessionManagementFilter ejecutaba CsrfAuthenticationStrategy al detectar nuevamente la identidad JWT y eliminaba el CSRF. Cambiar únicamente a IF_REQUIRED tampoco solucionó la prueba.
+
+La cadena JWT exige ahora estrategia de autenticación explícita, usa NullSecurityContextRepository y NullRequestCache. La sesión auxiliar conserva CSRF. Se retiraron el filtro de diagnóstico y su configuración de registro.
+
+PASS con Maven Wrapper offline, JDK 25 y selección AutenticacionWebTests,GoogleWebTests,AccesoGoogleTests. Resultado 23 pruebas, cero fallos, errores u omisiones. PASS visual en HTTPS, salida desde catálogo a /login?salida, mensaje de cierre y regreso al catálogo como visitante. Evidencia de ejecución en target/revision-logout.log.
+
+Pendientes para cerrar la etapa del adjunto: Google real con cuenta disponible, salida desde otra vista, suite PostgreSQL completa posterior, ejercicio y defensa. La salida actual redirige al formulario con confirmación. El adjunto solicita confirmación en el inicio y retorno al destino original tras login, aspectos todavía pendientes.
+
 ## Estado actual — 18/11/2026
 
 - HTTPS cerrado tras defensa corregida; registro local aprobado y cerrado (ficha etapa-02b); autenticación local E3A APROBADA por delegación del estudiante.
-- Rama: codex/registro-cierre (registro y autenticacion aun sin commit).
+- Rama actual codex/google-oidc. Cierre de autenticación local a6ca760. RF-06 en verificación.
+- RF-06: cada intento solicita selección de cuenta. MockMvc verificó el reintento en la misma sesión tras cancelar; la prueba de servicio verificó el rechazo de un correo local. Pasaron 23 pruebas de acceso. Queda pendiente repetir la colisión y elegir otra cuenta en Google real.
 - Stack confirmado nuevamente: Thymeleaf y PostgreSQL.
 - Base autorizada de pruebas: jdbc:postgresql://localhost:5432/reminishub_test.
 - reminishub_dev es produccion segun el estudiante; excluirla de pruebas.
@@ -17,6 +201,10 @@
 - Login/JWT: Suite previa de 60 PASS (644eaccd25f3465483187723480a57bb). Nueva revisión de vigencia: 40 pruebas sin DB PASS. Revisión posterior: 42 pruebas sin DB PASS, 64/64 con PostgreSQL y V6 PASS. Sufijo f2096d038ae849b59b982f51e8175c17, once XML y 64 casos individuales verificados.
 - Preparacion de defensa escrita por decision del estudiante: docs/defensa/guia-sustentacion.md; sin exigir respuestas por etapa.
 - Navegador: 16 combinaciones de vistas/idioma/ancho revisadas; accesibilidad del formulario limpio corregida.
+
+### Google OIDC — 18/11/2026
+
+RF-06 implementado bajo perfil google. La configuración delega autorización y callback en Spring Security. La transacción busca GOOGLE + sub, exige correo verificado para alta nueva, evita asociar por coincidencia de correo y asigna COLABORADOR. Tras resolver la cuenta se emite el JWT propio. PASS: cuatro pruebas de identidad, dos de protocolo local, 29 regresiones de login/registro y ocho comprobaciones simuladas del verificador. Pendientes suite completa de 70 en reminishub_test y consentimiento real con cliente Google. La tabla y sus restricciones provienen de V2.
 
 ### Revocación y límite de intentos — 18/11/2026
 
@@ -150,14 +338,14 @@ E1B aceptada expresamente el 14/11/2026. Criterios de rúbrica: 1 frontend; 2 ba
 | ID | Estado | Evidencia o pendiente | Rúbrica |
 |---|---|---|---|
 | RF-01, RF-02, RF-03, RF-04 | APROBADO | E1B aceptada el 14/11: catálogo, filtros combinables, paginación, detalle y búsqueda AJAX. Mejoras M4/M5 pendientes, sin ocultar sus límites. | 1, 2, 3 |
-| RF-05 | EN VERIFICACIÓN | Registro aceptado; login/JWT/logout implementados, E2E anterior PASS; limites de seguridad y verificacion actual pendientes. | 4 |
-| RF-06 | PENDIENTE | Dependencias presentes; Google OIDC no implementado. | 4 |
+| RF-05 | APROBADO | Registro, login local con JWT y cierre de sesión. Ejecución en PostgreSQL de prueba con 64 pruebas aprobadas, incluidas las de registro y sesión de extremo a extremo. Commit `a6ca760`. | 4 |
+| RF-06 | EN VERIFICACIÓN | Corregida la colisión de nombres entre servicio y cadena de seguridad. Con el perfil google y el servicio real, pasan las 2 pruebas web y las 4 de reglas de cuenta. La ejecución de 70 pruebas con sufijo dca4a15c667f4b26989933e415d9fe45 precede al arreglo. Pendientes la suite completa posterior y el recorrido HTTPS con Google y PostgreSQL. | 4 |
 | RF-07, RF-08 | EN DESARROLLO | Entidades y V2; falta flujo de presentación y moderación. | 1, 2, 4 |
 | RF-09 | EN DESARROLLO | Tabla/entidad de bitácora; sin triggers. | 3, 4 |
 | RF-10 | PENDIENTE | Sin reporte JDBC ni CSV. | 3, 5 |
 | RF-11, RF-12 | PENDIENTE | Sin mis propuestas ni reenvío; Should/Could respectivamente. | 1, 2 |
 | RF-13 | PENDIENTE | Sin CRUD funcional documentado. | 2 |
-| NF-01 | EN VERIFICACIÓN | E1B: bundles ES/EN, cookie de idioma y enlaces que conservan filtros; pruebas de vistas y fragmentos. | 5 |
+| NF-01 | EN VERIFICACIÓN | E1B y EO: bundles ES/EN/EO con paridad de claves y marcadores, cookie de idioma, `?lang=` validado y enlaces/filtros que conservan el idioma; pruebas de vistas, fragmentos y selector. Falta el recorrido real de navegador y teclado en EO. | 5 |
 | NF-02, NF-03 | EN VERIFICACIÓN | HTTPS/BCrypt/CSRF y JWT en cookie implementados; 401 API corregido. Permisos de negocio de modulos futuros y limites del token pendientes. | 4 |
 | NF-04 | PENDIENTE | Falta auditoria OWASP completa documentada sobre los flujos finales. | 4 |
 | NF-05 | EN DESARROLLO | JavaDoc de ping, DTO y contratos del catálogo; generación y cobertura completa pendientes. | 2 |
@@ -420,3 +608,17 @@ Aceptacion: PASS de casos del hito, regresion del catalogo, diff sin secretos y 
 ### Retomar con poco contexto
 
 Leer AGENTS.md, esta seccion, scripts/README.md y git status/log. Conservar codigo y evidencias aprobados; no repetir diagnostico ni auditorias sin cambios relevantes. Ejecutar un hito a la vez, una compilacion a la vez, sin agentes innecesarios. Registrar resultados resumidos y commit por unidad verificada con el estilo del estudiante. Primera accion futura: aprobar el plan E2A y verificar requisitos locales de HTTPS; no iniciar E2 completa de una vez. En esta sesion solo se cierra E1B y se deja este plan.
+
+### Adaptacion completa a tres idiomas (20/11/2026)
+
+[Verificado: git diff] Se completo el tercer idioma esperanto (`eo`) sobre el mecanismo existente: bundles de Spring, cookie `reminishub_lang`, parametro `?lang=` e `IdiomaAdvice`. No se agregaron dependencias, migraciones ni cambios de seguridad.
+
+- Bundles: `messages.properties`, `messages_en.properties` y `messages_eo.properties` tienen 109 claves cada uno; `propuestas*.properties` 64; `reporte*.properties` 33. Los placeholders `{0}`/`{1}` coinciden entre los tres idiomas y los archivos estan en UTF-8 sin BOM.
+- Codigo: `WebConfig` valida `es`, `en`, `eo` contra una lista cerrada; `layout.html` y `fragments/resultados.html` usan `th:lang`; los enlaces GET de paginacion y filtros conservan `lang` para que una URL copiada mantenga el idioma.
+- Pruebas: nuevas `IdiomaBundlesTests` (3) y `CatalogoWebTests` (2); ampliacion de `AutenticacionWebTests`, `RegistroWebTests`, `CatalogoIntegrationTests`, `PropuestasWebTests` y `ReporteWebTests`. `scripts/verificar.ps1` exige las nuevas suites.
+- PASS local: compilacion y 93 pruebas sin PostgreSQL (incluidas las 49 del incremento); cubren catalogo, login, registro, propuestas, reporte, bitacora, servicios y selector EO.
+- PASS local: paridad de claves, placeholders y lectura UTF-8 comprobadas por `IdiomaBundlesTests` y por script.
+- BLOCKED: suite completa con PostgreSQL. Faltan `DB_URL`, `DB_USER`, `DB_PASSWORD` y `RH_JWT_SECRET` en el proceso; el comando queda pendiente en `scripts/verificar.ps1`.
+- BLOCKED: recorrido real de navegador, teclado, axe y Lighthouse para EO. Las pruebas MockMvc no sustituyen esa evidencia.
+- [Por confirmar] La traduccion al esperanto es coherente y completa, pero no fue revisada por un hablante nativo; no se declara calidad linguistica certificada.
+- Sin commit: los cambios permanecen en el arbol de trabajo, junto al trabajo previo de Google. No se modificaron migraciones ni datos.

@@ -4,9 +4,9 @@ Actualizada el 18/11/2026. Describe el código actual, no funciones futuras. La 
 
 ## 1. Qué se puede demostrar
 
-ReminisHub permite consultar proyectos académicos publicados, filtrarlos y ver su detalle. Un visitante puede crear una cuenta de colaborador e iniciar sesión local. Las propuestas, moderación, Google y reportes todavía no están implementados. Tener sus entidades o dependencias no equivale a tener esos flujos.
+ReminisHub permite consultar proyectos académicos publicados, filtrarlos y ver su detalle. Un visitante puede crear una cuenta de colaborador e iniciar sesión local. El acceso con Google está en verificación. Quedan pendientes propuestas, moderación y reportes. Tener sus entidades o dependencias no equivale a tener esos flujos.
 
-El registro se cerró en la sesión anterior según trazabilidad. La autenticación sigue en revisión. Los informes Surefire `effa2ed51b7b40d8b1f4c36b5dc2a1ee` contienen 58 pruebas aprobadas, incluidas RegistroE2ETests y SesionE2ETests: son evidencia anterior a los ajustes del 18/11, no una ejecución de hoy.
+El registro se cerró en la sesión anterior según trazabilidad. La autenticación local fue aprobada tras verificar 64 casos en PostgreSQL y las demás suites. Los informes Surefire `effa2ed51b7b40d8b1f4c36b5dc2a1ee` contienen 58 pruebas aprobadas, incluidas RegistroE2ETests y SesionE2ETests: son evidencia anterior a los ajustes del 18/11, no una ejecución de hoy.
 
 ## 2. Arquitectura que debes dibujar
 
@@ -76,7 +76,7 @@ El filtro también verifica que la cuenta siga activa y conserve el rol firmado.
 
 Un enlace `<a>` navega aunque se dibuje como botón; `<button type="submit">` envía el formulario. Las clases Bootstrap son presentación, no autorización. El estilo usa espacios consistentes, bordes discretos, contraste y tipografía del sistema; no requiere otro framework.
 
-Cada campo tiene label. `aria-describedby` solo referencia elementos presentes. Los errores se explican mediante texto, no solo rojo, y se dirige el foco a un único campo inválido. Los bundles ES/EN contienen los mensajes. `th:text` escapa el contenido del usuario.
+Cada campo tiene label. `aria-describedby` solo referencia elementos presentes. Los errores se explican mediante texto, no solo rojo, y se dirige el foco a un único campo inválido. Los bundles ES/EN/EO contienen los mensajes. `th:text` escapa el contenido del usuario.
 
 Un 100 de Lighthouse o cero infracciones de axe no prueban conformidad total: faltan estados, recorridos manuales y módulos futuros. Una advertencia del navegador tampoco se corrige ocultándola; hay que identificar su recurso o su origen.
 
@@ -111,3 +111,7 @@ Un 100 de Lighthouse o cero infracciones de axe no prueban conformidad total: fa
 ## 10. Cómo estudiar al finalizar
 
 Primero reproduce cada recorrido. Después localiza sus archivos y explica una decisión y una alternativa. Por último, ejecuta un caso negativo y predice el resultado antes de verlo. Usa las fichas de etapa como referencia; registra las dudas que no puedas justificar con código o evidencia. No memorices que todo está terminado si quedan requisitos pendientes.
+
+### Acceso mediante Google
+
+Spring inicia la autorización y procesa el retorno OIDC. AccesoGoogle busca el identificador estable del proveedor dentro de una transacción. La primera visita requiere correo verificado y disponible. Una coincidencia con un correo local existente se rechaza para proteger esa cuenta. Una identidad conocida conserva su cuenta aunque cambie el correo en Google. El servidor comprueba que siga activa y emite la misma cookie RH_TOKEN que en el acceso local. Para la demostración final queda pendiente usar un cliente web registrado y completar el consentimiento real.

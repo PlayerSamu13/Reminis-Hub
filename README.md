@@ -1,6 +1,6 @@
 # ReminisHub
 
-Repositorio académico de proyectos. El catálogo público permite buscar, filtrar, paginar y consultar detalles en español e inglés; el registro local crea cuentas de colaborador con BCrypt sobre HTTPS y el login emite un JWT propio en cookie HttpOnly. Google, CRUD privado, moderación, auditoría y reportes siguen pendientes.
+Repositorio académico de proyectos. El catálogo público permite buscar, filtrar, paginar y consultar detalles en español, inglés y esperanto; el registro local crea cuentas de colaborador con BCrypt sobre HTTPS y el login emite un JWT propio en cookie HttpOnly. Google, CRUD privado, moderación, auditoría y reportes siguen pendientes.
 
 ## Entorno local
 
@@ -27,3 +27,8 @@ El script activa el perfil `https` y exige `DB_URL`, `DB_USER`, `DB_PASSWORD`, `
 Para ejecutar pruebas desde la raíz sigue [scripts/README.md](scripts/README.md). El comando es `./scripts/verificar.ps1 -Offline` cuando las dependencias ya están descargadas. Con `CATALOGO_DB_TESTS=true` se activan las suites PostgreSQL, incluida la verificación de extremo a extremo del registro. Las pruebas deben usar exclusivamente la base autorizada.
 
 Consulta el estado y las limitaciones en [trazabilidad](docs/development/trazabilidad.md) y las comprobaciones de interfaz en [evidencias](docs/evidencias/README.md).
+### Acceso opcional con Google en HTTPS local
+
+En Google Cloud configura un cliente OAuth de tipo aplicación web. Registra exactamente `https://localhost:8443/login/oauth2/code/google` como URI de redirección autorizada. Si la pantalla de consentimiento está en pruebas, añade la cuenta de demostración como usuario de prueba.
+
+Configura `RH_GOOGLE_CLIENT_ID` y `RH_GOOGLE_CLIENT_SECRET` en la terminal privada que ya contiene las variables de HTTPS y PostgreSQL. Desde la raíz ejecuta `.\scripts\iniciar-https.ps1 -Google`. En `/login` selecciona «Continuar con Google». Al volver al catálogo, comprueba la identidad en `/api/v1/sesion`, cierra la sesión y comprueba que esa ruta devuelve 401. Conserva como evidencia el resultado y omite valores de cookies, códigos y secretos.
