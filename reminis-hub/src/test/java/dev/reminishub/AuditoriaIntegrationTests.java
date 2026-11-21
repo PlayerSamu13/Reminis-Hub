@@ -28,8 +28,10 @@ class AuditoriaIntegrationTests {
             throw new IllegalStateException("Solo se permite reminishub_test");
         registro.add("spring.datasource.url", () -> url);
         // Flyway necesita sus conexiones de arranque sin agotar el pool JPA de tamaño uno.
-        // Boot hereda usuario y contraseña del datasource; no se duplican secretos.
+        // Boot 4.1.2 requiere credenciales explícitas para el datasource separado.
         registro.add("spring.flyway.url", () -> url);
+        registro.add("spring.flyway.user", () -> System.getenv("DB_USER"));
+        registro.add("spring.flyway.password", () -> System.getenv("DB_PASSWORD"));
     }
 
     @Autowired ActorProyecto actor;
