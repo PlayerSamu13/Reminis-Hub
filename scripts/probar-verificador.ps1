@@ -15,7 +15,7 @@ if ($env:RH_TEST_CASE -eq 'sin-informes') { exit 0 }
 $suffix = ($args | Where-Object { $_ -like '-Dsurefire.reportNameSuffix=*' }) -replace '^-Dsurefire.reportNameSuffix=', ''
 $directory = Join-Path (Get-Location) 'target/surefire-reports'
 New-Item -ItemType Directory -Path $directory -Force | Out-Null
-$suites = @{'CatalogoIntegrationTests'=11; 'EsquemaExistenteTests'=2; 'ReminisHubApplicationTests'=1; 'RegistroServiceTests'=5; 'RegistroWebTests'=12; 'RegistroIntegrationTests'=4; 'TokenServiceTests'=7; 'AutenticacionWebTests'=17; 'service.IntentosLoginTests'=1; 'SesionE2ETests'=3; 'RegistroE2ETests'=1}
+$suites = @{'CatalogoIntegrationTests'=11; 'EsquemaExistenteTests'=2; 'ReminisHubApplicationTests'=1; 'RegistroServiceTests'=5; 'RegistroWebTests'=12; 'RegistroIntegrationTests'=4; 'TokenServiceTests'=7; 'AutenticacionWebTests'=17; 'service.IntentosLoginTests'=1; 'service.AccesoGoogleTests'=4; 'GoogleWebTests'=2; 'SesionE2ETests'=3; 'RegistroE2ETests'=1; 'AuditoriaIntegrationTests'=2; 'service.ActorProyectoTests'=3; 'service.IntentosRegistroTests'=2; 'SeguridadEscrituraTests'=5; 'service.PropuestasServiceTests'=8; 'service.ReporteServiceTests'=5; 'PropuestasIntegrationTests'=4; 'ReporteIntegrationTests'=2; 'ReporteWebTests'=4; 'PropuestasWebTests'=5}
 foreach ($name in $suites.Keys) {
     if ($env:RH_TEST_CASE -eq 'ausente' -and $name -eq 'CatalogoIntegrationTests') { continue }
     $skipped = 0; $errors = 0; $detail = ''
@@ -50,8 +50,8 @@ try {
         if ($case -ne 'secreto-corto' -and $text.Contains($env:RH_JWT_SECRET)) { throw "Secreto JWT impreso en $case" }
         if ($case -eq 'url-invalida' -and !$text.Contains('DB_URL invalida')) { throw 'Falta diagnostico previo de URL' }
         if ($case -eq 'secreto-corto' -and !$text.Contains('al menos 32 bytes')) { throw 'Falta diagnostico del secreto corto' }
-        if ($case -eq 'errores' -and (!$text.Contains('errores=64') -or !$text.Contains('DIAGNOSTICO:'))) { throw 'Falta resumen de los errores' }
-        if ($case -eq 'correcto' -and !$text.Contains('PASS: 64 pruebas')) { throw 'Falta resumen exitoso' }
+        if ($case -eq 'errores' -and (!$text.Contains('errores=110') -or !$text.Contains('DIAGNOSTICO:'))) { throw 'Falta resumen de los errores' }
+        if ($case -eq 'correcto' -and !$text.Contains('PASS: 110 pruebas')) { throw 'Falta resumen exitoso' }
         $logMatch = [regex]::Match($text, 'Log local: (.+)')
         if ($logMatch.Success) {
             $log = Get-Content -LiteralPath $logMatch.Groups[1].Value.Trim() -Raw

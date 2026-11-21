@@ -13,7 +13,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -84,14 +83,22 @@ public class SecurityConfig {
         return http.redirectToHttps(https -> https.requestMatchers(
                         PathPatternRequestMatcher.withDefaults().matcher("/registro"),
                         PathPatternRequestMatcher.withDefaults().matcher("/login"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/propuestas/**"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/mis-propuestas"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/admin/**"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/api/v1/propuestas/**"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/api/v1/admin/**"),
                         PathPatternRequestMatcher.withDefaults().matcher("/logout")))
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/registro", "/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/registro", "/login").permitAll()
+                        .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/mis-propuestas", "/propuestas/**", "/api/v1/propuestas/**").authenticated()
                         .requestMatchers(HttpMethod.GET, PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.HEAD, PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/sesion").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/csrf").authenticated()
                         .requestMatchers(HttpMethod.POST, "/logout").authenticated()
                         .anyRequest().denyAll())
                 // El logout propio borra la cookie del JWT; el filtro estandar no la conoce.
@@ -100,7 +107,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.requireCsrfProtectionMatcher(peticion ->
                         !java.util.Set.of("GET", "HEAD", "TRACE", "OPTIONS")
                                 .contains(peticion.getMethod().toUpperCase(java.util.Locale.ROOT))))
-                .sessionManagement(sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // El filtro JWT autentica cada petición; no debe disparar un nuevo login de sesión.
+                .sessionManagement(sesion -> sesion.requireExplicitAuthenticationStrategy(true))
+                .securityContext(context -> context.securityContextRepository(
+                        new org.springframework.security.web.context.NullSecurityContextRepository()))
+                .requestCache(cache -> cache.requestCache(
+                        new org.springframework.security.web.savedrequest.NullRequestCache()))
                 // Autenticacion propia desde la cookie, DESPUES de CsrfFilter: un POST sin token
                 // se rechaza en 403 antes de que el JWT llegue a conceder identidad.
                 .addFilterAfter(new JwtCookieAuthenticationFilter(decodificador, jwtConverter, usuarios, revocadas),

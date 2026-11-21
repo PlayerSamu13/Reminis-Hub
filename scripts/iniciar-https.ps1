@@ -1,10 +1,11 @@
 <# Inicia el perfil HTTPS sobre la base de pruebas autorizada. No lee archivos privados. #>
 [CmdletBinding()]
-param()
+param([switch]$Google)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $required = @('DB_URL', 'DB_USER', 'DB_PASSWORD', 'RH_JWT_SECRET',
     'RH_TLS_KEYSTORE', 'RH_TLS_PASSWORD')
+if ($Google) { $required += @('RH_GOOGLE_CLIENT_ID', 'RH_GOOGLE_CLIENT_SECRET') }
 foreach ($name in $required) {
     if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name, 'Process'))) {
         throw "Falta configurar $name en esta terminal."
@@ -26,7 +27,7 @@ Write-Host 'Perfil HTTPS local: https://localhost:8443/proyectos'
 $module = Join-Path (Split-Path $PSScriptRoot -Parent) 'reminis-hub'
 $previousProfile = $env:SPRING_PROFILES_ACTIVE
 try {
-    $env:SPRING_PROFILES_ACTIVE = 'https'
+    $env:SPRING_PROFILES_ACTIVE = if ($Google) { 'https,google' } else { 'https' }
     Push-Location $module
     try {
         & .\mvnw.cmd spring-boot:run

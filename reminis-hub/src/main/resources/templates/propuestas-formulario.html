@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{propuestas.formulario}, #{propuestas.meta})}"></head>
+<body><header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5">
+<div class="row justify-content-center"><div class="col-12 col-lg-9">
+    <a class="btn btn-outline-secondary mb-3" th:href="@{/mis-propuestas}" th:text="#{propuestas.volver}"></a>
+    <h1 class="mt-3" th:text="${propuestaId == null} ? #{propuestas.nueva} : #{propuestas.editar}"></h1>
+    <p th:text="#{propuestas.introduccion}"></p>
+    <p th:if="${errorOperacion == true}" class="alert alert-danger" role="alert"
+       th:text="${conflicto == true} ? #{propuestas.conflicto} : #{propuestas.errorOperacion}"></p>
+    <form th:action="${propuestaId == null} ? @{/propuestas/nueva} : @{/propuestas/{id}/editar(id=${propuestaId})}"
+          th:object="${propuesta}" method="post" id="propuesta-form">
+        <input type="hidden" th:field="*{version}">
+        <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger" role="alert" tabindex="-1" id="errores-propuesta">
+            <p th:text="#{propuestas.revisar}"></p><ul class="mb-0"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
+        </div>
+        <div class="mb-3">
+            <label for="nombre" class="form-label" th:text="#{propuestas.campoNombre}"></label>
+            <input id="nombre" th:field="*{nombre}" class="form-control" required minlength="3" maxlength="150">
+        </div>
+        <div class="mb-3">
+            <label for="resumen" class="form-label" th:text="#{propuestas.campoResumen}"></label>
+            <textarea id="resumen" th:field="*{resumen}" class="form-control" rows="3" required minlength="30" maxlength="280"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="descripcion" class="form-label" th:text="#{propuestas.campoDescripcion}"></label>
+            <textarea id="descripcion" th:field="*{descripcion}" class="form-control" rows="7" required minlength="20" maxlength="4000"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="urlRepositorio" class="form-label" th:text="#{propuestas.campoRepositorio}"></label>
+            <input id="urlRepositorio" th:field="*{urlRepositorio}" class="form-control" type="url" required maxlength="300" aria-describedby="repo-ayuda">
+            <p id="repo-ayuda" class="form-text" th:text="#{propuestas.repoAyuda}"></p>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3"><label for="anio" class="form-label" th:text="#{propuestas.anio}"></label>
+                <input id="anio" th:field="*{anio}" type="number" min="2000" max="2100" required class="form-control"></div>
+            <div class="col-md-6 mb-3"><label for="semestre" class="form-label" th:text="#{propuestas.semestre}"></label>
+                <select id="semestre" th:field="*{semestre}" required class="form-select"><option value="" th:text="#{propuestas.seleccionar}"></option><option value="1">I</option><option value="2">II</option></select></div>
+        </div>
+        <div class="mb-3"><label for="categoriaId" class="form-label" th:text="#{propuestas.campoCategoria}"></label>
+            <select id="categoriaId" th:field="*{categoriaId}" required class="form-select"><option value="" th:text="#{propuestas.seleccionar}"></option>
+                <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${#messages.msgOrNull('categoria.' + c.codigo) ?: c.codigo}"></option></select></div>
+        <fieldset class="mb-4"><legend class="h5" th:text="#{propuestas.campoTecnologias}"></legend>
+            <div class="row"><div class="col-6 col-md-4 mb-2" th:each="t : ${tecnologias}"><div class="form-check">
+                <input type="checkbox" class="form-check-input" th:field="*{tecnologiaIds}" th:value="${t.id}">
+                <label class="form-check-label" th:for="${#ids.prev('tecnologiaIds')}" th:text="${t.nombre}"></label>
+            </div></div></div>
+        </fieldset>
+        <fieldset class="border rounded p-3 mb-4"><legend class="h5" th:text="#{propuestas.coautores}"></legend>
+            <p th:text="#{propuestas.autoriaAyuda}"></p>
+            <div id="coautores">
+                <div class="coautor border-top pt-3 mb-3" th:each="autor, fila : *{autores}">
+                    <label class="form-label" th:for="${'autor-nombre-' + fila.index}" th:text="#{propuestas.campoAutor}"></label>
+                    <input class="form-control mb-2" th:id="${'autor-nombre-' + fila.index}" th:field="*{autores[__${fila.index}__].nombrePublico}" required minlength="2" maxlength="120">
+                    <label class="form-label" th:for="${'autor-evidencia-' + fila.index}" th:text="#{propuestas.campoEvidencia}"></label>
+                    <input class="form-control mb-2" th:id="${'autor-evidencia-' + fila.index}" th:field="*{autores[__${fila.index}__].referenciaEvidencia}" required maxlength="255">
+                    <button type="button" class="btn btn-outline-secondary quitar-autor" hidden th:text="#{propuestas.quitarAutor}"></button>
+                </div>
+            </div>
+            <button id="agregar-autor" type="button" class="btn btn-outline-secondary" hidden th:text="#{propuestas.agregarAutor}"></button>
+            <noscript><p th:text="#{propuestas.coautoresSinJs}"></p></noscript>
+            <p id="limite-autores" role="status" class="form-text" th:text="#{propuestas.limiteAutores}"></p>
+        </fieldset>
+        <div class="form-check mb-4"><input id="aceptaTerminos" th:field="*{aceptaTerminos}" type="checkbox" required class="form-check-input">
+            <label for="aceptaTerminos" class="form-check-label" th:text="#{propuestas.consentimiento}"></label></div>
+        <div class="d-flex flex-wrap gap-3"><button class="btn btn-primary" type="submit" th:text="#{propuestas.guardar}"></button>
+            <a class="btn btn-outline-secondary" th:href="@{/mis-propuestas}" th:text="#{propuestas.cancelar}"></a></div>
+    </form>
+</div></div>
+<template id="plantilla-autor"><div class="coautor border-top pt-3 mb-3">
+    <label class="form-label autor-nombre-label" th:text="#{propuestas.campoAutor}"></label><input class="form-control mb-2 autor-nombre" required minlength="2" maxlength="120">
+    <label class="form-label autor-evidencia-label" th:text="#{propuestas.campoEvidencia}"></label><input class="form-control mb-2 autor-evidencia" required maxlength="255">
+    <button type="button" class="btn btn-outline-secondary quitar-autor" th:text="#{propuestas.quitarAutor}"></button>
+</div></template>
+</main><footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/vendor/jquery-3.7.1.min.js}"></script><script th:src="@{/js/propuestas.js}"></script>
+</body></html>

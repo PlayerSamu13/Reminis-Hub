@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es"><body>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}"><body>
 <div th:fragment="resultados" id="resultados" tabindex="-1">
     <div class="results-meta"><p class="result-count" th:text="${resultado.total == 1} ? #{catalog.results.one} : #{catalog.results.many(${resultado.total})}">0 proyectos encontrados</p><span th:text="#{catalog.order}">Periodo más reciente</span></div>
     <div th:if="${resultado.total == 0}" class="empty-state">
         <span class="empty-mark" aria-hidden="true">{ }</span>
         <h3 th:text="#{empty.title}">Aún no hay coincidencias</h3>
         <p th:text="#{empty.description}">Prueba con otra palabra o elimina algún filtro para seguir explorando.</p>
-        <a class="btn btn-outline-primary" th:href="@{/proyectos}" th:text="#{empty.reset}">Ver todos los proyectos</a>
+        <a class="btn btn-outline-primary" th:href="@{/proyectos(lang=${#locale.language})}" th:text="#{empty.reset}">Ver todos los proyectos</a>
     </div>
     <div class="empty-state" th:if="${resultado.total > 0 and resultado.pagina >= resultado.paginas}">
         <h3 th:text="#{pagination.outOfRange}">Esta página no está disponible</h3>
@@ -23,10 +23,10 @@
         </article>
     </div>
     <nav class="pagination-bar" th:if="${resultado.paginas > 1 and resultado.pagina < resultado.paginas}" th:attr="aria-label=#{pagination.label}">
-        <a class="btn btn-outline-secondary" th:if="${resultado.pagina > 0}" th:href="@{/proyectos(q=${q},categoria=${categoria},anio=${anio},tecnologia=${tecnologia},pagina=${resultado.pagina - 1})}"><span aria-hidden="true">← </span><span th:text="#{pagination.previous}">Anterior</span></a>
+        <a class="btn btn-outline-secondary" th:if="${resultado.pagina > 0}" th:href="@{/proyectos(q=${q},categoria=${categoria},anio=${anio},tecnologia=${tecnologia},pagina=${resultado.pagina - 1},lang=${#locale.language})}"><span aria-hidden="true">← </span><span th:text="#{pagination.previous}">Anterior</span></a>
         <span th:unless="${resultado.pagina > 0}"></span>
         <span th:text="#{pagination.current(${resultado.pagina + 1},${resultado.paginas})}"></span>
-        <a class="btn btn-outline-secondary" th:if="${resultado.pagina + 1 < resultado.paginas}" th:href="@{/proyectos(q=${q},categoria=${categoria},anio=${anio},tecnologia=${tecnologia},pagina=${resultado.pagina + 1})}"><span th:text="#{pagination.next}">Siguiente</span><span aria-hidden="true"> →</span></a>
+        <a class="btn btn-outline-secondary" th:if="${resultado.pagina + 1 < resultado.paginas}" th:href="@{/proyectos(q=${q},categoria=${categoria},anio=${anio},tecnologia=${tecnologia},pagina=${resultado.pagina + 1},lang=${#locale.language})}"><span th:text="#{pagination.next}">Siguiente</span><span aria-hidden="true"> →</span></a>
         <span th:unless="${resultado.pagina + 1 < resultado.paginas}"></span>
     </nav>
 </div>

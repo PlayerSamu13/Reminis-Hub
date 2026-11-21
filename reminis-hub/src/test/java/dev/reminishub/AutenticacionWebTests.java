@@ -39,8 +39,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = {LoginController.class, SesionApiController.class},
         properties = "reminishub.jwt.secret=" + SecretosDePrueba.JWT)
-@Import({SecurityConfig.class, JwtConfig.class, WebConfig.class, dev.reminishub.service.TokenService.class})
+@Import({SecurityConfig.class, JwtConfig.class, WebConfig.class, dev.reminishub.service.TokenService.class,
+        AutenticacionWebTests.PaginaDePrueba.class})
 class AutenticacionWebTests {
+    @org.springframework.stereotype.Controller
+    static class PaginaDePrueba {
+        @org.springframework.web.bind.annotation.GetMapping("/")
+        String pagina(org.springframework.ui.Model modelo, org.springframework.security.core.Authentication autenticacion) {
+            modelo.addAttribute("googleHabilitado", false);
+            modelo.addAttribute("sesion", new dev.reminishub.controller.web.SesionAdvice().sesion(autenticacion));
+            return "login";
+        }
+    }
     private static final String EMAIL = "cuenta@example.invalid";
     private static final String CLAVE = "Frase ficticia para pruebas 123";
 
@@ -61,6 +71,26 @@ class AutenticacionWebTests {
     }
     @MockitoBean dev.reminishub.repository.SesionesRevocadas revocadas;
     @MockitoBean UsuarioRepository usuarios;
+
+    @Test
+    void erroresConservanCorreoEscapadoYNoContrasena() throws Exception {
+        String malicioso = "\"><script>alert(1)</script>";
+        for (int estado : java.util.List.of(401, 429, 503)) {
+            reset(autenticador, intentos);
+            if (estado == 401) when(autenticador.authenticate(any())).thenThrow(new BadCredentialsException("no"));
+            if (estado == 429) when(intentos.reservar(malicioso)).thenReturn(20L);
+            if (estado == 503) when(autenticador.authenticate(any())).thenThrow(
+                    new org.springframework.security.oauth2.jwt.JwtEncodingException("detalle privado"));
+            mvc.perform(post("https://localhost/login").secure(true).with(csrf())
+                            .param("email", malicioso).param("contrasena", CLAVE))
+                    .andExpect(status().is(estado))
+                    .andExpect(content().string(containsString("&lt;script&gt;")))
+                    .andExpect(content().string(not(containsString("<script>alert(1)</script>"))))
+                    .andExpect(content().string(not(containsString(CLAVE))))
+                    .andExpect(content().string(not(containsString("detalle privado"))))
+                    .andExpect(cookie().doesNotExist(JwtConfig.COOKIE));
+        }
+    }
 
     @BeforeEach
     void prepararCuenta() {
@@ -88,6 +118,15 @@ class AutenticacionWebTests {
     }
 
     @Test
+    void falloDePersistenciaAlEmitirNoEntregaCookie() throws Exception {
+        when(usuarios.findByEmail(EMAIL)).thenThrow(new org.springframework.dao.DataAccessResourceFailureException("detalle privado"));
+        mvc.perform(post("https://localhost/login").secure(true).with(csrf()).param("email", EMAIL))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(cookie().doesNotExist(JwtConfig.COOKIE))
+                .andExpect(content().string(not(containsString("detalle privado"))));
+    }
+
+    @Test
     void formularioTraducidoSinRepoblarLaClave() throws Exception {
         mvc.perform(get("https://localhost/login").secure(true).param("lang", "es"))
                 .andExpect(status().isOk())
@@ -100,6 +139,22 @@ class AutenticacionWebTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Sign in")))
                 .andExpect(content().string(containsString("Create an account")));
+        mvc.perform(get("https://localhost/login").secure(true).param("lang", "eo"))
+                .andExpect(status().isOk())
+                .andExpect(cookie().value("reminishub_lang", "eo"))
+                .andExpect(content().string(containsString("lang=\"eo\"")))
+                .andExpect(content().string(containsString("Ensaluti")))
+                .andExpect(content().string(containsString("Krei konton")))
+                .andExpect(content().string(containsString("href=\"/login?lang=eo\"")))
+                .andExpect(content().string(containsString("aria-current=\"true\"")));
+    }
+
+    @Test
+    void idiomaNoSoportadoCaeAEspanolSinGuardarCookie() throws Exception {
+        mvc.perform(get("https://localhost/login").secure(true).param("lang", "fr"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Iniciar sesión")))
+                .andExpect(cookie().doesNotExist("reminishub_lang"));
     }
 
     @Test
@@ -238,12 +293,27 @@ class AutenticacionWebTests {
         Cookie cookie = iniciarSesion();
         Jwt jwt = decodificador.decode(cookie.getValue());
         var id = java.util.UUID.fromString(jwt.getId());
-        mvc.perform(post("https://localhost/logout").secure(true).with(csrf()).cookie(cookie))
+        var pagina = mvc.perform(get("https://localhost/").secure(true).cookie(cookie))
+                .andExpect(status().isOk()).andReturn();
+        var formulario = java.util.regex.Pattern.compile(
+                "<form[^>]*action=\"/logout\"[^>]*>(.*?)</form>", java.util.regex.Pattern.DOTALL)
+                .matcher(pagina.getResponse().getContentAsString());
+        assertTrue(formulario.find(), "Debe existir el formulario de salida");
+        var campo = java.util.regex.Pattern.compile("name=\"_csrf\"[^>]*value=\"([^\"]+)\"")
+                .matcher(formulario.group(1));
+        assertTrue(campo.find(), "El formulario real debe enviar CSRF");
+        var sesion = (org.springframework.mock.web.MockHttpSession) pagina.getRequest().getSession(false);
+        mvc.perform(get("https://localhost/vendor/bootstrap-5.3.8.min.css").secure(true)
+                        .session(sesion).cookie(cookie))
+                .andExpect(status().isOk());
+        mvc.perform(post("https://localhost/logout").secure(true).session(sesion)
+                        .param("_csrf", campo.group(1)).cookie(cookie))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?salida"))
                 .andExpect(cookie().maxAge(JwtConfig.COOKIE, 0))
                 .andExpect(cookie().value(JwtConfig.COOKIE, ""));
         verify(revocadas).revocar(id, jwt.getExpiresAt());
+        assertTrue(sesion.isInvalid(), "Salir debe invalidar también la sesión auxiliar");
         when(revocadas.contiene(id)).thenReturn(true);
         mvc.perform(get("https://localhost/api/v1/sesion").secure(true).cookie(cookie))
                 .andExpect(status().isUnauthorized());

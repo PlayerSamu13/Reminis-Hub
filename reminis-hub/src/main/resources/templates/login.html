@@ -7,6 +7,7 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
             <h1 th:text="#{login.titulo}">Iniciar sesión</h1>
+            <p th:if="${falloAcceso == true}" role="alert" class="alert alert-danger" th:text="#{login.falloAcceso}"></p>
             <div th:if="${salida == true}" class="alert alert-success mt-4" role="status" th:text="#{login.salida}">Has cerrado la sesión.</div>
             <form th:action="@{/login}" method="post" class="mt-4">
                 <p th:if="${esperaLogin != null}" class="alert alert-warning" role="alert"
@@ -15,7 +16,7 @@
                 <div id="login-error" th:if="${credencialesInvalidas == true}" class="alert alert-danger" role="alert" th:text="#{login.credencialesInvalidas}">El correo o la contraseña no son correctos.</div>
                 <div class="mb-3">
                     <label for="email" class="form-label" th:text="#{login.correo}">Correo electrónico</label>
-                    <input id="email" name="email" type="email" class="form-control" required maxlength="254"
+                    <input id="email" name="email" type="email" class="form-control" required maxlength="254" th:value="${correoLogin}"
                            autocomplete="username" th:classappend="${credencialesInvalidas == true} ? 'is-invalid'"
                            th:autofocus="${credencialesInvalidas == true}"
                            th:attr="aria-invalid=${credencialesInvalidas == true}, aria-describedby=${credencialesInvalidas == true ? 'login-error' : null}">
@@ -33,6 +34,10 @@
                 </div>
             </form>
             <p class="mt-4">
+                <a th:if="${googleHabilitado}" class="btn btn-outline-secondary" th:href="@{/oauth2/authorization/google}" th:text="#{login.google}"></a>
+            </p>
+            <p th:if="${googleHabilitado and param.googleError != null}" role="alert" class="alert alert-danger" th:text="#{login.googleError}"></p>
+            <p>
                 <span th:text="#{login.sinCuenta}">¿Todavía no tienes cuenta?</span>
                 <a th:href="@{/registro}" th:text="#{login.registro}">Crear una cuenta</a>
             </p>

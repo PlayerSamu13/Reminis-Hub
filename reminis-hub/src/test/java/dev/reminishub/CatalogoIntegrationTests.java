@@ -41,8 +41,9 @@ class CatalogoIntegrationTests {
     @BeforeEach
     void datosAislados() {
         marca = "Prueba" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        usuario = jdbc.queryForObject("INSERT INTO usuario(email,nombre) VALUES (?,?) RETURNING id",
+        usuario = jdbc.queryForObject("INSERT INTO usuario(email,nombre,rol) VALUES (?,?,'ADMIN') RETURNING id",
                 Long.class, marca.toLowerCase() + "@example.invalid", "Usuario ficticio de prueba");
+        jdbc.queryForObject("select set_config('app.actor_user_id', ?, true)", String.class, Long.toString(usuario));
         categoria = jdbc.queryForObject("INSERT INTO categoria(codigo) VALUES (?) RETURNING id",
                 Long.class, marca.toUpperCase());
         tecnologia = jdbc.queryForObject("INSERT INTO tecnologia(nombre) VALUES (?) RETURNING id",
@@ -61,15 +62,20 @@ class CatalogoIntegrationTests {
     }
 
     private long insertar(String estado, int numero, int anio) {
-        return jdbc.queryForObject("""
+        long id = jdbc.queryForObject("""
             INSERT INTO proyecto(nombre,resumen,descripcion,url_repositorio,anio,semestre,categoria_id,
                 estado,motivo_decision,cargado_por,terminos_aceptados_en,terminos_version,es_ficticio)
-            VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, now(), 'TEST', true) RETURNING id
+            VALUES (?, ?, ?, ?, ?, 1, ?, 'PENDIENTE_REVISION', NULL, ?, now(), 'TEST', false) RETURNING id
             """, Long.class, marca + " proyecto " + numero,
                 "Resumen ficticio para verificar búsqueda y visibilidad de proyectos.",
-                "Descripción ficticia suficientemente larga para el contrato SQL.",
+                numero == 0 ? "<script>alert('dato ficticio')</script>" : "Descripción ficticia suficientemente larga para el contrato SQL.",
                 "https://github.com/pruebas-reminishub/" + marca + numero,
-                anio, categoria, estado, estado.equals("RECHAZADO") ? "Motivo privado" : null, usuario);
+                anio, categoria, usuario);
+        if (!estado.equals("PENDIENTE_REVISION")) {
+            jdbc.update("UPDATE proyecto SET estado=?,motivo_decision=? WHERE id=?", estado,
+                    estado.equals("RECHAZADO") ? "Motivo privado" : null, id);
+        }
+        return id;
     }
 
     @Test
@@ -107,7 +113,6 @@ class CatalogoIntegrationTests {
     @Test
     void detalleExponeSoloDatosPublicosYEscapeHtml() throws Exception {
         long id = publicados.getFirst();
-        jdbc.update("UPDATE proyecto SET descripcion=? WHERE id=?", "<script>alert('dato ficticio')</script>", id);
         mvc.perform(get("/api/v1/proyectos/{id}", id)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.autores[0]").value("Nombre público ficticio"))
                 .andExpect(content().string(not(containsString("EVIDENCIA_PRIVADA_TEST"))))
@@ -115,7 +120,11 @@ class CatalogoIntegrationTests {
                 .andExpect(content().string(not(containsString("usuarioId"))));
         mvc.perform(get("/proyectos/{id}", id)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("&lt;script&gt;")))
-                .andExpect(content().string(not(containsString("<script>alert"))))
+                .andExpect(content().string(not(containsString("<script>alert"))));
+        // Los ejemplos versionados de V5 conservan su marca; no se falsea es_ficticio para nuevos registros.
+        Long ejemplo = jdbc.queryForObject("SELECT min(id) FROM proyecto WHERE es_ficticio AND estado='PUBLICADO'", Long.class);
+        assertNotNull(ejemplo);
+        mvc.perform(get("/proyectos/{id}", ejemplo)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Datos ficticios")));
     }
 
@@ -127,12 +136,19 @@ class CatalogoIntegrationTests {
         var ingles = mvc.perform(get("/proyectos").param("q", marca).param("lang", "en"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Your next great idea.")))
-                .andExpect(content().string(containsString("Fictitious data")))
                 .andReturn().getResponse().getCookie("reminishub_lang");
         assertNotNull(ingles);
         mvc.perform(get("/catalogo/resultados").param("q", marca).cookie(ingles))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("projects found")))
                 .andExpect(content().string(not(containsString("site-header"))));
+        var esperanto = mvc.perform(get("/proyectos").param("q", marca).param("lang", "eo"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lang=\"eo\"")))
+                .andExpect(content().string(containsString("Via sekva granda ideo.")))
+                .andReturn().getResponse().getCookie("reminishub_lang");
+        assertNotNull(esperanto);
+        mvc.perform(get("/catalogo/resultados").param("q", marca).cookie(esperanto))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("projektoj trovitaj")));
     }
 
     @Test
@@ -150,12 +166,16 @@ class CatalogoIntegrationTests {
 
     @Test
     void paginaFueraDeRangoPermiteVolverConFiltros() throws Exception {
-        for (String idioma : List.of("es", "en")) {
+        for (String idioma : List.of("es", "en", "eo")) {
+            String fueraDeRango = switch (idioma) {
+                case "es" -> "Esta página no está disponible";
+                case "en" -> "This page is unavailable";
+                default -> "Ĉi tiu paĝo ne estas disponebla";
+            };
             mvc.perform(get("/proyectos").param("q", marca).param("anio", "2026")
                             .param("pagina", "10").param("lang", idioma))
                     .andExpect(status().isOk())
-                    .andExpect(content().string(containsString(idioma.equals("es")
-                            ? "Esta página no está disponible" : "This page is unavailable")))
+                    .andExpect(content().string(containsString(fueraDeRango)))
                     .andExpect(content().string(matchesPattern("(?s).*href=\"/proyectos\\?q="
                             + marca + "[^\"]*&amp;anio=2026[^\"]*&amp;pagina=0&amp;lang="
                             + idioma + "\".*")))
@@ -165,12 +185,16 @@ class CatalogoIntegrationTests {
 
     @Test
     void contadorSingularSeTraduce() throws Exception {
-        for (String idioma : List.of("es", "en")) {
+        for (String idioma : List.of("es", "en", "eo")) {
+            String singular = switch (idioma) {
+                case "es" -> "1 proyecto encontrado";
+                case "en" -> "1 project found";
+                default -> "1 projekto trovita";
+            };
             mvc.perform(get("/catalogo/resultados").param("q", marca)
                             .param("tecnologia", Long.toString(tecnologia)).param("lang", idioma))
                     .andExpect(status().isOk())
-                    .andExpect(content().string(containsString(idioma.equals("es")
-                            ? "1 proyecto encontrado" : "1 project found")));
+                    .andExpect(content().string(containsString(singular)));
         }
     }
 

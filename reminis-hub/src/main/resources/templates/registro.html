@@ -7,6 +7,7 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
             <h1 th:text="#{registro.titulo}">Crear cuenta</h1>
+            <p th:if="${esperaRegistro != null}" role="alert" class="alert alert-warning" th:text="#{registro.espera(${esperaRegistro})}"></p>
             <div th:if="${registroCreado == true}" class="alert alert-success mt-4" role="status">
                 <p th:text="#{registro.creado}">Tu cuenta de colaborador se ha creado.</p>
                 <a class="btn btn-primary" th:href="@{/proyectos}" th:text="#{registro.volver}">Explorar proyectos</a>

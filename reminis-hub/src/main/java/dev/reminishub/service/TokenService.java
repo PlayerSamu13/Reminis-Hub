@@ -44,7 +44,8 @@ public class TokenService {
      */
     public String emitir(String email) {
         var cuenta = usuarios.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("La cuenta desaparecio durante el login."));
+                .filter(usuario -> Boolean.TRUE.equals(usuario.getActivo()))
+                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Cuenta no disponible."));
         Instant ahora = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(JwtConfig.EMISOR)

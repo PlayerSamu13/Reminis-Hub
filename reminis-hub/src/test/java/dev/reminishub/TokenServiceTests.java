@@ -32,6 +32,37 @@ class TokenServiceTests {
     private UsuarioRepository usuarios;
     private TokenService tokens;
 
+    @Test
+    void falloRealDelCodificadorDevuelve503SinCookie() {
+        JwtEncoder fallido = mock(JwtEncoder.class);
+        when(fallido.encode(any())).thenThrow(new org.springframework.security.oauth2.jwt.JwtEncodingException("detalle privado"));
+        var emisor = new TokenService(fallido, usuarios, 60);
+        var autenticador = mock(org.springframework.security.authentication.AuthenticationManager.class);
+        when(autenticador.authenticate(any())).thenReturn(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("cuenta@example.invalid", ""));
+        var controlador = new dev.reminishub.controller.web.LoginController(autenticador, emisor,
+                mock(dev.reminishub.repository.SesionesRevocadas.class), new dev.reminishub.service.IntentosLogin());
+        var respuesta = new org.springframework.mock.web.MockHttpServletResponse();
+        var modelo = new org.springframework.ui.ExtendedModelMap();
+        assertEquals("login", controlador.entrar("cuenta@example.invalid", "clave", respuesta, modelo));
+        assertEquals(503, respuesta.getStatus());
+        assertNull(respuesta.getHeader("Set-Cookie"));
+        assertEquals(true, modelo.get("falloAcceso"));
+        verify(fallido).encode(any());
+    }
+
+    @Test
+    void cuentaAusenteOInactivaNoPuedeEmitirToken() {
+        when(usuarios.findByEmail("cuenta@example.invalid")).thenReturn(Optional.empty());
+        assertThrows(org.springframework.security.authentication.BadCredentialsException.class,
+                () -> tokens.emitir("cuenta@example.invalid"));
+        var inactiva = cuenta();
+        inactiva.setActivo(false);
+        when(usuarios.findByEmail("cuenta@example.invalid")).thenReturn(Optional.of(inactiva));
+        assertThrows(org.springframework.security.authentication.BadCredentialsException.class,
+                () -> tokens.emitir("cuenta@example.invalid"));
+    }
+
     @BeforeEach
     void preparar() {
         JwtConfig configuracion = new JwtConfig();
@@ -49,6 +80,7 @@ class TokenServiceTests {
         usuario.setNombre("Cuenta de Prueba");
         usuario.setPasswordHash("{bcrypt}$2a$12$hashficticio");
         usuario.setRol(RolUsuario.ADMIN);
+        usuario.setActivo(true);
         usuario.setActivo(true);
         return usuario;
     }

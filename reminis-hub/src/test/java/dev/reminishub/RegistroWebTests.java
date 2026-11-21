@@ -24,6 +24,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RegistroWebTests {
     @Autowired MockMvc mvc;
     @MockitoBean RegistroService registro;
+    @MockitoBean dev.reminishub.service.IntentosRegistro intentos;
+
+    @Test
+    void limiteUsaIpDeConexionYNoCabeceraDelCliente() throws Exception {
+        when(intentos.reservar("127.0.0.1")).thenReturn(40L);
+        for (String idioma : java.util.List.of("es", "en", "eo")) {
+            String espera = switch (idioma) {
+                case "es" -> "40 segundos";
+                case "en" -> "40 seconds";
+                default -> "40 sekundoj";
+            };
+            mvc.perform(post("https://localhost/registro").secure(true).with(csrf())
+                            .header("X-Forwarded-For", "203.0.113.9")
+                            .cookie(new jakarta.servlet.http.Cookie("reminishub_lang", idioma))
+                            .param("nombre", "Cuenta prueba").param("email", "registro@example.invalid")
+                            .param("contrasena", "Frase ficticia para pruebas 123"))
+                    .andExpect(status().isTooManyRequests())
+                    .andExpect(header().string("Retry-After", "40"))
+                    .andExpect(content().string(containsString(espera)))
+                    .andExpect(content().string(not(containsString("Frase ficticia para pruebas 123"))));
+        }
+        verifyNoInteractions(registro);
+        verify(intentos, times(3)).reservar("127.0.0.1");
+    }
     @MockitoBean dev.reminishub.repository.SesionesRevocadas revocadas;
     @MockitoBean dev.reminishub.repository.UsuarioRepository usuarios;
 
@@ -34,6 +58,10 @@ class RegistroWebTests {
                 .andExpect(content().string(containsString("name=\"_csrf\"")));
         mvc.perform(get("https://localhost/registro").secure(true).param("lang", "en"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("Public name")));
+        mvc.perform(get("https://localhost/registro").secure(true).param("lang", "eo"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lang=\"eo\"")))
+                .andExpect(content().string(containsString("Publika nomo")));
     }
 
     @Test

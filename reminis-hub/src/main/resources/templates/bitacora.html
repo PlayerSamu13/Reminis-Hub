@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{bitacora.titulo}, #{bitacora.descripcion})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5">
+    <h1 th:text="#{bitacora.titulo}"></h1><p th:text="#{bitacora.descripcion}"></p>
+    <a class="btn btn-outline-secondary mb-3" th:href="@{/admin/reporte}" th:text="#{reporte.titulo}"></a>
+    <p th:if="${#lists.isEmpty(resultado.contenido())}" class="alert alert-info" role="status" th:text="#{bitacora.vacio}"></p>
+    <div th:unless="${#lists.isEmpty(resultado.contenido())}" class="table-responsive" tabindex="0" th:attr="aria-label=#{bitacora.titulo}">
+        <table class="table table-striped align-middle"><caption th:text="#{bitacora.descripcion}"></caption>
+            <thead><tr><th scope="col" th:text="#{bitacora.fecha}"></th><th scope="col" th:text="#{bitacora.proyecto}"></th><th scope="col" th:text="#{bitacora.actor}"></th><th scope="col" th:text="#{bitacora.operacion}"></th><th scope="col" th:text="#{bitacora.anterior}"></th><th scope="col" th:text="#{reporte.estado}"></th><th scope="col" th:text="#{bitacora.motivo}"></th></tr></thead>
+            <tbody><tr th:each="fila : ${resultado.contenido()}">
+                <td><time th:datetime="${fila.registradoEn()}" th:text="${fila.registradoEn()}"></time></td>
+                <td th:text="${fila.proyectoId()}"></td><td th:text="${fila.actorId() == null ? '—' : fila.actorId()}"></td>
+                <td th:text="#{${'bitacora.operacion.' + fila.operacion()}}"></td>
+                <td><span th:if="${fila.estadoAnterior() != null}" th:text="#{${'reporte.estado.' + fila.estadoAnterior()}}"></span><span th:unless="${fila.estadoAnterior() != null}">—</span></td>
+                <td th:text="#{${'reporte.estado.' + fila.estadoNuevo()}}"></td><td th:text="${fila.motivo() == null ? '—' : fila.motivo()}"></td>
+            </tr></tbody>
+        </table>
+    </div>
+    <nav class="d-flex gap-3 mt-3" th:attr="aria-label=#{bitacora.paginas}">
+        <a th:if="${resultado.pagina() > 0}" class="btn btn-outline-secondary" th:href="@{/admin/bitacora(pagina=${resultado.pagina()-1},lang=${#locale.language})}" th:text="#{bitacora.anteriorPagina}"></a>
+        <a th:if="${resultado.siguiente()}" class="btn btn-outline-secondary" th:href="@{/admin/bitacora(pagina=${resultado.pagina()+1},lang=${#locale.language})}" th:text="#{bitacora.siguientePagina}"></a>
+    </nav>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body></html>

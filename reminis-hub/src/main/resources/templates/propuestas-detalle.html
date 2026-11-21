@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(${propuesta.resumen.nombre}, #{propuestas.meta})}"></head>
+<body><header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5">
+    <a class="btn btn-outline-secondary mb-3" th:href="@{/mis-propuestas}" th:text="#{propuestas.volver}"></a>
+    <p th:if="${operacionCorrecta == true}" class="alert alert-success mt-3" role="status" th:text="#{propuestas.correcto}"></p>
+    <h1 class="mt-3" th:text="${propuesta.resumen.nombre}"></h1>
+    <p><span th:text="#{propuestas.estado}"></span>: <strong th:text="${#messages.msg('propuestas.estado.' + propuesta.resumen.estado)}"></strong></p>
+    <p class="lead" th:text="${propuesta.resumenTexto}"></p>
+    <p class="description-text" th:text="${propuesta.descripcion}"></p>
+    <dl><dt th:text="#{propuestas.periodoEtiqueta}"></dt><dd th:text="${propuesta.anio + '-' + propuesta.semestre}"></dd></dl>
+    <a class="btn btn-outline-secondary" th:href="${propuesta.urlRepositorio}" target="_blank" rel="noopener noreferrer" th:text="#{propuestas.verRepositorio}"></a>
+    <section th:if="${propuesta.resumen.motivoDecision != null}" class="alert alert-light border mt-4">
+        <h2 class="h5" th:text="#{propuestas.motivo}"></h2><p class="mb-0" th:text="${propuesta.resumen.motivoDecision}"></p>
+    </section>
+    <section class="mt-4" th:unless="${propuesta.autores.isEmpty()}">
+        <h2 class="h4" th:text="#{propuestas.coautores}"></h2><p th:text="#{propuestas.evidenciaPrivada}"></p>
+        <ul><li th:each="a : ${propuesta.autores}"><strong th:text="${a.nombrePublico}"></strong><span> — </span><span th:text="${a.referenciaEvidencia}"></span></li></ul>
+    </section>
+    <div class="d-flex flex-wrap gap-3 mt-4">
+        <a class="btn btn-primary" th:if="${propuesta.propietario and (propuesta.resumen.estado == 'PENDIENTE_REVISION' or propuesta.resumen.estado == 'RECHAZADO')}"
+           th:href="@{/propuestas/{id}/editar(id=${propuesta.resumen.id})}" th:text="#{propuestas.editar}"></a>
+    </div>
+    <section class="border rounded p-3 mt-4" th:if="${propuesta.resumen.estado != 'RETIRADO' and (propuesta.propietario or administrador)}">
+        <h2 class="h5" th:text="#{propuestas.retirar}"></h2><p th:text="#{propuestas.retiroAviso}"></p>
+        <form th:action="@{/propuestas/{id}/retirar(id=${propuesta.resumen.id})}" method="post">
+            <input type="hidden" name="version" th:value="${propuesta.resumen.version}">
+            <button type="submit" class="btn btn-outline-danger" th:text="#{propuestas.retirar}"></button>
+        </form>
+    </section>
+    <section class="border rounded p-3 mt-4" th:if="${administrador and propuesta.resumen.estado == 'PENDIENTE_REVISION'}">
+        <h2 class="h4" th:text="#{propuestas.moderar}"></h2><p th:text="#{propuestas.revisionConsentimiento}"></p>
+        <form th:action="@{/admin/propuestas/{id}/decision(id=${propuesta.resumen.id})}" method="post" class="mb-3">
+            <input type="hidden" name="version" th:value="${propuesta.resumen.version}"><input type="hidden" name="aprobar" value="true">
+            <div class="form-check mb-3"><input id="revisionConfirmada" name="revisionConfirmada" value="true" type="checkbox" required class="form-check-input">
+                <label class="form-check-label" for="revisionConfirmada" th:text="#{propuestas.confirmarRevision}"></label></div>
+            <button type="submit" class="btn btn-primary" th:text="#{propuestas.aprobar}"></button>
+        </form>
+        <form th:action="@{/admin/propuestas/{id}/decision(id=${propuesta.resumen.id})}" method="post">
+            <input type="hidden" name="version" th:value="${propuesta.resumen.version}"><input type="hidden" name="aprobar" value="false">
+            <label for="motivo" class="form-label" th:text="#{propuestas.motivo}"></label>
+            <textarea id="motivo" name="motivo" rows="3" required maxlength="500" class="form-control mb-3"></textarea>
+            <button type="submit" class="btn btn-outline-danger" th:text="#{propuestas.rechazar}"></button>
+        </form>
+    </section>
+</main><footer th:replace="~{fragments/layout :: footer}"></footer></body></html>

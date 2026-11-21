@@ -25,6 +25,10 @@ import java.util.Locale;
  */
 @Controller
 public class LoginController {
+    @org.springframework.web.bind.annotation.ModelAttribute("googleHabilitado")
+    boolean googleHabilitado(@org.springframework.beans.factory.annotation.Value("${reminishub.google.habilitado:false}") boolean habilitado) {
+        return habilitado;
+    }
     private final AuthenticationManager autenticador;
     private final TokenService tokens;
 
@@ -65,6 +69,7 @@ public class LoginController {
                          @RequestParam(name = "contrasena", required = false) String contrasena,
                          HttpServletResponse respuesta, Model modelo) {
         String correo = email == null ? "" : email.strip().toLowerCase(Locale.ROOT);
+        modelo.addAttribute("correoLogin", correo.length() <= 254 ? correo : "");
         long espera = intentos.reservar(correo.length() <= 254 ? correo : "");
         if (espera > 0) {
             respuesta.setStatus(429);
@@ -79,6 +84,10 @@ public class LoginController {
             var autenticada = autenticador.authenticate(credencial);
             respuesta.addHeader(HttpHeaders.SET_COOKIE, tokens.cookie(tokens.emitir(autenticada.getName())).toString());
             return "redirect:/proyectos";
+        } catch (org.springframework.dao.DataAccessException | org.springframework.security.oauth2.jwt.JwtEncodingException excepcion) {
+            modelo.addAttribute("falloAcceso", true);
+            respuesta.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            return "login";
         } catch (AuthenticationException excepcion) {
             modelo.addAttribute("credencialesInvalidas", true);
             respuesta.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -88,9 +97,13 @@ public class LoginController {
 
     /** POST con CSRF obligatorio: un enlace GET no puede cerrar la sesion de otro usuario. */
     @PostMapping("/logout")
-    public String salir(Authentication autenticacion, HttpServletResponse respuesta) {
+    public String salir(Authentication autenticacion, HttpServletResponse respuesta,
+                        jakarta.servlet.http.HttpServletRequest peticion) {
         Jwt jwt = (Jwt) autenticacion.getPrincipal();
         revocadas.revocar(java.util.UUID.fromString(jwt.getId()), jwt.getExpiresAt());
+        var sesion = peticion.getSession(false);
+        if (sesion != null) sesion.invalidate();
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         respuesta.addHeader(HttpHeaders.SET_COOKIE, tokens.cookieVacia().toString());
         return "redirect:/login?salida";
     }

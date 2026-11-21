@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{fragments/layout :: head(#{propuestas.errorTitulo}, #{propuestas.meta})}"></head>
+<body><header th:replace="~{fragments/layout :: header}"></header>
+<main id="contenido" class="container py-5">
+    <h1 th:text="#{propuestas.errorTitulo}"></h1>
+    <p role="alert" th:text="${codigo == 409} ? #{propuestas.conflicto} : #{propuestas.errorOperacion}"></p>
+    <a class="btn btn-primary" th:href="@{/mis-propuestas}" th:text="#{propuestas.lista}"></a>
+</main><footer th:replace="~{fragments/layout :: footer}"></footer></body></html>

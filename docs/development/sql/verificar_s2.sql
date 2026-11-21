@@ -18,7 +18,12 @@ SELECT c.relname, pg_get_userbyid(c.relowner) AS propietario,
 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 WHERE n.nspname='public' AND c.relname IN ('proyecto','proyecto_autor','bitacora_proyecto');
 BEGIN;
-\ir V7__integridad_y_auditoria_proyectos.sql
+SELECT EXISTS(SELECT 1 FROM public.flyway_schema_history WHERE version='7' AND success) AS v7_aplicada \gset
+\if :v7_aplicada
+\echo 'V7 aplicada: se prueban los triggers existentes sin recrearlos.'
+\else
+\ir ../../../reminis-hub/src/main/resources/db/migration/V7__integridad_y_auditoria_proyectos.sql
+\endif
 
 CREATE FUNCTION pg_temp.rechaza(sql text, mensaje text) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN

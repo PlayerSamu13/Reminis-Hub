@@ -19,8 +19,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 public class RegistroController {
     private final RegistroService registro;
+    private final dev.reminishub.service.IntentosRegistro intentos;
 
-    public RegistroController(RegistroService registro) { this.registro = registro; }
+    public RegistroController(RegistroService registro, dev.reminishub.service.IntentosRegistro intentos) {
+        this.registro = registro;
+        this.intentos = intentos;
+    }
 
     @InitBinder("registro")
     void camposPermitidos(WebDataBinder binder) {
@@ -44,7 +48,16 @@ public class RegistroController {
     @PostMapping("/registro")
     public String registrar(@Valid @ModelAttribute("registro") RegistroForm formulario,
                             BindingResult errores, HttpServletResponse response,
-                            RedirectAttributes redirect) {
+                            RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest peticion,
+                            Model modelo) {
+        long espera = intentos.reservar(peticion.getRemoteAddr());
+        if (espera > 0) {
+            formulario.setContrasena(null);
+            response.setStatus(429);
+            response.setHeader("Retry-After", Long.toString(espera));
+            modelo.addAttribute("esperaRegistro", espera);
+            return "registro";
+        }
         if (errores.hasErrors()) {
             formulario.setContrasena(null);
             response.setStatus(400);

@@ -1,4 +1,4 @@
--- Candidata S2: fuera de db/migration hasta verificar PostgreSQL y detener DevTools.
+-- S2: versión revisada con el verificador transaccional sobre reminishub_test.
 -- No reconstruye historia anterior ni modifica V1-V6 o datos existentes.
 -- Los roles propietarios/superusuarios pueden desactivar triggers: no son una frontera
 -- contra el administrador de BD. El rol de ejecución no debe ser propietario en producción.
