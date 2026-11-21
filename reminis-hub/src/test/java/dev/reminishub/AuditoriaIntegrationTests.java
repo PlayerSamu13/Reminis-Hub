@@ -27,6 +27,9 @@ class AuditoriaIntegrationTests {
         if (!"jdbc:postgresql://localhost:5432/reminishub_test".equals(url))
             throw new IllegalStateException("Solo se permite reminishub_test");
         registro.add("spring.datasource.url", () -> url);
+        // Flyway necesita sus conexiones de arranque sin agotar el pool JPA de tamaño uno.
+        // Boot hereda usuario y contraseña del datasource; no se duplican secretos.
+        registro.add("spring.flyway.url", () -> url);
     }
 
     @Autowired ActorProyecto actor;

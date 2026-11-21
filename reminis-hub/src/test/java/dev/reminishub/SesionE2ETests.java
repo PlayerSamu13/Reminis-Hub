@@ -32,6 +32,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "reminishub.jwt.secret=" + SecretosDePrueba.JWT)
 @EnabledIfEnvironmentVariable(named = "CATALOGO_DB_TESTS", matches = "true")
 class SesionE2ETests {
+    private static final java.util.concurrent.atomic.AtomicInteger CLIENTE =
+            new java.util.concurrent.atomic.AtomicInteger();
+    // IP documental simulada: cada caso conserva el limitador real sin heredar intentos ajenos.
+    private final String ipDePrueba = "192.0.2." + CLIENTE.incrementAndGet();
     private static final String PREFIJO = "e2e-sesion-";
     private static final String CLAVE = "Frase ficticia para sesion E2E 123";
 
@@ -49,6 +53,7 @@ class SesionE2ETests {
     /** Registra la cuenta por el formulario real y devuelve la cookie del login. */
     private Cookie entrar(String email, String nombre) throws Exception {
         mvc.perform(post("https://localhost/registro").secure(true).with(csrf())
+                        .with(peticion -> { peticion.setRemoteAddr(ipDePrueba); return peticion; })
                         .param("nombre", nombre).param("email", email).param("contrasena", CLAVE))
                 .andExpect(status().is3xxRedirection());
 
@@ -124,6 +129,7 @@ class SesionE2ETests {
     void unaCuentaInactivaNoPuedeIniciarSesionAunqueLaClaveSeaCorrecta() throws Exception {
         String email = emailDePrueba;
         mvc.perform(post("https://localhost/registro").secure(true).with(csrf())
+                        .with(peticion -> { peticion.setRemoteAddr(ipDePrueba); return peticion; })
                         .param("nombre", "Cuenta Inactiva").param("email", email).param("contrasena", CLAVE))
                 .andExpect(status().is3xxRedirection());
         jdbc.update("UPDATE usuario SET activo = false WHERE email = ?", email);
