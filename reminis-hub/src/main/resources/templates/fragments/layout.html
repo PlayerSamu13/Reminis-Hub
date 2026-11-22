@@ -26,7 +26,7 @@
             <a class="nav-catalog" th:if="${sesion != null and sesion.rol() == 'ADMIN'}" th:href="@{/admin/reporte}" th:attr="aria-current=${rutaActual == '/admin/reporte' ? 'page' : null}" th:text="#{nav.reporte}">Reporte</a>
             <a class="nav-catalog" th:if="${sesion != null and sesion.rol() == 'ADMIN'}" th:href="@{/admin/bitacora}" th:attr="aria-current=${rutaActual == '/admin/bitacora' ? 'page' : null}" th:text="#{nav.bitacora}">Bitácora</a>
             <div class="nav-sesion">
-                <span th:if="${sesion != null}" class="nav-usuario" th:text="#{nav.saludo(${#strings.arraySplit(sesion.nombre(), ' ')[0]})}">Sesión activa</span>
+                <span th:if="${sesion != null and sesion.nombre() != null and !sesion.nombre().isBlank()}" class="nav-usuario" th:text="#{nav.saludo(${#strings.substringBefore(#strings.trim(sesion.nombre()), ' ')})}">Sesión activa</span>
                 <form th:if="${sesion != null}" th:action="@{/logout}" method="post">
                     <button type="submit" th:text="#{nav.salir}">Salir</button>
                 </form>

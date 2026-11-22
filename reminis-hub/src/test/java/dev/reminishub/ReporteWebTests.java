@@ -39,6 +39,20 @@ class ReporteWebTests {
                 .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
     }
 
+    @Test void saludoUsaPrimerNombreYNoFallaSiFaltaElClaim() throws Exception {
+        when(reportes.consultar(null,null)).thenReturn(List.of());
+        mvc.perform(get("https://localhost/admin/reporte").secure(true).with(admin()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Hola,"))));
+        var conNombre = jwt().jwt(j -> j.subject("admin@example.invalid").claim("rol","ADMIN")
+                        .claim("nombre","Ana María Pérez"))
+                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        mvc.perform(get("https://localhost/admin/reporte").secure(true).with(conNombre))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Hola, Ana")))
+                .andExpect(content().string(not(containsString("Hola, Ana María"))));
+    }
+
     @Test void apiAnonimaDevuelve401YColaborador403() throws Exception {
         mvc.perform(get("https://localhost/api/v1/admin/reporte").secure(true)).andExpect(status().isUnauthorized());
         mvc.perform(get("https://localhost/api/v1/admin/reporte").secure(true)
