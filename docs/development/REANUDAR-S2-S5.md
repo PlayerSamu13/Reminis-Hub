@@ -12,11 +12,15 @@ Continúa en `C:\Users\samuq\Proyecto PW`. Lee `AGENTS.md`, `C:\Users\samuq\Down
 - Nunca leer/imprimir .env, secretos, cookies o JWT. No modificar V1–V6 aplicadas; no clean/repair/reset/rebase destructivo.
 - Única base autorizada para pruebas: `jdbc:postgresql://localhost:5432/reminishub_test`. `reminishub_dev` es producción según el estudiante. No probar allí.
 
-## Corrección pendiente de confirmar
+## Resultado vigente del 21/11/2026
+
+La ejecución d4f2629178474a8e82490ade9865b2a1 confirmó las 116 pruebas con PostgreSQL. Los cambios posteriores de interfaz y CSV pasaron sus pruebas específicas. El estado de entrega actualizado se encuentra al inicio de trazabilidad.md. Las siguientes entradas conservan el historial.
+
+## Historial de la corrección de auditoría
 
 La suite PostgreSQL de 116 pruebas dio 1 fallo y 2 errores (sufijo 3f1a9caf80434806b097a5412bebeffe). Se corrigieron los fixtures/configuración: Flyway con datasource propio en AuditoriaIntegrationTests para no agotar el pool JPA de tamaño uno; IP simulada distinta por caso de SesionE2ETests para evitar 429 por contaminación entre pruebas. Segunda ejecución a8a943012a7a45c187b035add1cf9e27: sesión PASS; auditoría falla por credenciales ausentes en su datasource separado. Boot 4.1.2 no las hereda en este flujo (fuente local inspeccionado). Se añadieron suppliers de DB_USER y DB_PASSWORD a spring.flyway.user/password; pendiente nueva ejecución. Repetir verificar.ps1 y leer el resultado antes de declarar cierre. Ver trazabilidad para causas y evidencia.
 
-## Actualización prioritaria (20/11/2026)
+## Historial de implementación (20/11/2026)
 
 S2–S5 ya tienen implementación. No repetir su creación: leer el Estado actual de trazabilidad.md y operacion-propuestas.md. V7 fue trasladada a recursos Flyway; las referencias siguientes a candidata externa son historia previa. La regresión local s2-s5-regresion.log registra 86 PASS, sin pruebas PostgreSQL. Primer pendiente: ejecutar scripts/verificar.ps1 en reminishub_test y revisar errores reales; después completar los recorridos de escritura; el recorrido HTTPS de lectura ya pasó con ADMIN (CSS, propuestas, reporte, bitácora y moderación ES/EN). El estudiante autorizó cierre solo si se verifica completamente. Mantener cambios ajenos y documentar resultados reales.
 

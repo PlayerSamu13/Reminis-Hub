@@ -1,6 +1,6 @@
 # ReminisHub
 
-Repositorio académico de proyectos. El catálogo público permite buscar, filtrar, paginar y consultar detalles en español, inglés y esperanto; el registro local crea cuentas de colaborador con BCrypt sobre HTTPS y el login emite un JWT propio en cookie HttpOnly. Google, CRUD privado, moderación, auditoría y reportes siguen pendientes.
+Repositorio académico de proyectos. El catálogo público permite buscar, filtrar, paginar y consultar detalles en español, inglés y esperanto; el registro local crea cuentas de colaborador con BCrypt sobre HTTPS y el login emite un JWT propio en cookie HttpOnly. Los colaboradores pueden presentar, editar y retirar propuestas. Los administradores pueden moderarlas, consultar la bitácora y exportar el reporte CSV. El perfil Google habilita el acceso OIDC cuando se configuran sus credenciales. Consulta la [guía de operación](docs/development/operacion-propuestas.md).
 
 ## Entorno local
 
