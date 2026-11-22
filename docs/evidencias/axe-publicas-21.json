@@ -1,0 +1,32 @@
+[
+  {
+    "route": "/proyectos",
+    "url": "https://localhost:8443/proyectos",
+    "version": "4.14.0",
+    "violations": [],
+    "passes": 45,
+    "incomplete": [
+      "color-contrast"
+    ]
+  },
+  {
+    "route": "/registro",
+    "url": "https://localhost:8443/registro",
+    "version": "4.14.0",
+    "violations": [],
+    "passes": 41,
+    "incomplete": [
+      "color-contrast"
+    ]
+  },
+  {
+    "route": "/login",
+    "url": "https://localhost:8443/login",
+    "version": "4.14.0",
+    "violations": [],
+    "passes": 42,
+    "incomplete": [
+      "color-contrast"
+    ]
+  }
+]
